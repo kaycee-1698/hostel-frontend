@@ -1,0 +1,104 @@
+import { Booking } from '@/types';
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+export async function createGuest(guest: any) {
+  const res = await fetch(`${BASE_URL}/guests`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(guest),
+  });
+  return await res.json();
+}
+
+export async function getAllGuests() {
+  const res = await fetch(`${BASE_URL}/guests`);
+  return await res.json();
+}
+
+export const createBooking = async (bookingData: Partial<Booking>) => {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(bookingData),
+    });
+    console.log('Booking data:', bookingData);
+
+    if (!response.ok) {
+      console.error('wrong Booking data:', bookingData);
+      throw new Error('Failed to create booking');
+      
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in createBooking:', error);
+    console.error('Booking data:', bookingData);
+    throw error;
+  }
+};
+
+export const getBookingById = async (id: number) => {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings/${id}`);
+  if (!res.ok) throw new Error('Failed to fetch booking');
+  return res.json();
+};
+
+export async function getAllBookings() {
+    const res = await fetch(`${BASE_URL}/bookings`);
+    return res.json();
+  };
+
+export async function deleteBooking(id: number) {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings/${id}`, {
+      method: 'DELETE',
+    });
+  
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`Failed to delete booking ${id}:`, errorText);
+      throw new Error('Failed to delete booking');
+    }
+  
+    return res.json();
+  }
+
+export async function updateBooking(id: number, editedBooking: any) {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editedBooking),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`Failed to update booking ${id}:`, errorText);
+      throw new Error('Failed to update booking');
+    }
+  
+    return res.json();
+  }
+
+  export async function getTodayBookings(today: string) { 
+    const res = await fetch(`${BASE_URL}/bookings?check_in=${today}`);
+    console.log('Bookings fetched:', res);
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`Failed to fetch today's bookings:`, errorText);
+      throw new Error('Failed to fetch today\'s bookings');
+    }
+    const data = await res.json();
+    console.log('Bookings data:', data); // Check if data is received properly
+    return data;
+    
+  }
+
+  export async function uploadFile(file: File): Promise<string> {
+    // Here, implement the upload logic (e.g., using Supabase Storage, Firebase, AWS S3)
+    // For the sake of this example, let's assume it returns a URL after upload
+    const storageURL = 'https://your-storage-service-url.com/uploaded-file-path';
+    return storageURL;
+  }

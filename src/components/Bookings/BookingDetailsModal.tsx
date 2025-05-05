@@ -1,0 +1,241 @@
+'use client';
+
+import React, { useState } from 'react';
+import { Booking } from '@/types';
+
+interface BookingDetailsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  booking: Booking | null;
+  onSave: (updatedBooking: Booking) => void;
+}
+
+export default function BookingDetailsModal({
+  isOpen,
+  onClose,
+  booking,
+  onSave,
+}: BookingDetailsModalProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedBooking, setEditedBooking] = useState<Booking | null>(booking);
+
+  if (!isOpen || !booking) return null;
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (editedBooking) {
+      setEditedBooking({
+        ...editedBooking,
+        [e.target.name]: e.target.value,
+      });
+    }
+  };
+
+  const handleSave = () => {
+    if (editedBooking) {
+      onSave(editedBooking);
+      setIsEditing(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditedBooking(booking); // Reset to original booking data
+    setIsEditing(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+      <div className="bg-white p-6 rounded-lg max-w-3xl w-full shadow-lg">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Booking Details</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex">
+            <div className="w-1/2">
+              <div className="mb-2">
+                <strong>Booking name:</strong>{' '}
+                {isEditing ? (
+                  <input
+                    name="booking_name"
+                    value={editedBooking?.booking_name || ''}
+                    onChange={handleInputChange}
+                    className="border p-1 rounded w-full"
+                  />
+                ) : (
+                  booking.booking_name
+                )}
+              </div>
+              <div className="mb-2">
+                <strong>OTA:</strong>{' '}
+                {isEditing ? (
+                  <input
+                    name="ota_name"
+                    value={editedBooking?.ota_name || ''}
+                    onChange={handleInputChange}
+                    className="border p-1 rounded w-full"
+                  />
+                ) : (
+                  booking.ota_name
+                )}
+              </div>
+              <div className="mb-2">
+                <strong>Number of Adults:</strong>{' '}
+                {isEditing ? (
+                  <input
+                    name="number_of_adults"
+                    type="number"
+                    value={editedBooking?.number_of_adults || ''}
+                    onChange={handleInputChange}
+                    className="border p-1 rounded w-full"
+                  />
+                ) : (
+                  booking.number_of_adults
+                )}
+              </div>
+              <div className="mb-2">
+                <strong>Contact Number:</strong>{' '}
+                {isEditing ? (
+                  <input
+                    name="contact_number"
+                    value={editedBooking?.contact_number || ''}
+                    onChange={handleInputChange}
+                    className="border p-1 rounded w-full"
+                  />
+                ) : (
+                  booking.contact_number
+                )}
+              </div>
+              <div className="mb-2">
+                <strong>Check-In Date:</strong>{' '}
+                {isEditing ? (
+                  <input
+                    name="check_in"
+                    type="date"
+                    value={editedBooking?.check_in || ''}
+                    onChange={handleInputChange}
+                    className="border p-1 rounded w-full"
+                  />
+                ) : (
+                  new Date(booking.check_in).toLocaleDateString()
+                )}
+              </div>
+              <div className="mb-2">
+                <strong>Check-Out Date:</strong>{' '}
+                {isEditing ? (
+                  <input
+                    name="check_out"
+                    type="date"
+                    value={editedBooking?.check_out || ''}
+                    onChange={handleInputChange}
+                    className="border p-1 rounded w-full"
+                  />
+                ) : (
+                  new Date(booking.check_out).toLocaleDateString()
+                )}
+              </div>
+            </div>
+
+            <div className="w-1/2 pl-4">
+              <div className="mb-2">
+                <strong>Base Amount:</strong>{' '}
+                {isEditing ? (
+                  <input
+                    name="base_amount"
+                    type="number"
+                    value={editedBooking?.base_amount || ''}
+                    onChange={handleInputChange}
+                    className="border p-1 rounded w-full"
+                  />
+                ) : (
+                  `₹${booking.base_amount}`
+                )}
+              </div>
+              <div className="mb-2">
+                <strong>Commission:</strong> ₹{booking.commission}
+              </div>
+              <div className="mb-2">
+                <strong>GST:</strong> ₹{booking.gst}
+              </div>
+              <div className="mb-2">
+                <strong>Paid Amount:</strong>{' '}
+                {isEditing ? (
+                  <input
+                    name="payment_received"
+                    type="number"
+                    value={editedBooking?.payment_received || ''}
+                    onChange={handleInputChange}
+                    className="border p-1 rounded w-full"
+                  />
+                ) : (
+                  `₹${booking.payment_received}`
+                )}
+              </div>
+              <div className="mb-2">
+                <strong>Pending Amount:</strong> ₹{booking.pending_amount}
+              </div>
+              <div className="mb-2">
+                <strong>Total Payment:</strong>{' '}
+                ₹{booking.pending_amount + booking.payment_received}
+              </div>
+              <div className="mb-2">
+                <strong>Profit After Commission:</strong>{' '}
+                ₹{booking.profit_after_commission}
+              </div>
+              <div className="mb-2">
+                <strong>Bank:</strong>{' '}
+                {isEditing ? (
+                  <input
+                    name="bank"
+                    value={editedBooking?.bank || ''}
+                    onChange={handleInputChange}
+                    className="border p-1 rounded w-full"
+                  />
+                ) : (
+                  booking.bank
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end mt-4">
+          {isEditing ? (
+            <>
+              <button
+                onClick={handleSave}
+                className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-700 mr-2"
+              >
+                Save
+              </button>
+              <button
+                onClick={handleCancel}
+                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-700"
+            >
+              Edit
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 ml-2"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
