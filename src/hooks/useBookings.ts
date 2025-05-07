@@ -7,7 +7,9 @@ export function useBookings() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const fetchBookings = async () => {
+    console.log('Fetching bookings...');
     const data = await getAllBookings();
+    console.log('Fetched bookings:', data);
     const sorted = data.bookings.sort((a: Booking, b:Booking) => {
       const dateA = new Date(a.check_in);
       const dateB = new Date(b.check_in);
@@ -31,9 +33,11 @@ export function useBookings() {
   };
 
   const updateSingleBooking = async (id: number, updated: Booking) => {
+    console.log('Updating booking in usebookings:', id, updated);
     await updateBooking(id, updated);
     const updatedBooking = await getBookingById(id);
     setBookings(prev => prev.map(b => (b.booking_id === id ? updatedBooking : b)));
+    return updatedBooking; // Return the updated booking for further processing if needed
   };
 
   const addNewBooking = async (booking: Partial<Booking>) => {

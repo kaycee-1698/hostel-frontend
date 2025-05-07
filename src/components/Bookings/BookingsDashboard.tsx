@@ -1,11 +1,18 @@
 'use client';
-import { useState } from 'react';
-import { useBookings } from '@/hooks/useBookings';
-import CreateBookingForm from './CreateBookingForm';
-import BookingsTable from './BookingsTable';
+
+import React, { useState, useEffect } from 'react';
 import { Booking } from '@/types';
+import { useBookings } from '@/hooks/useBookings';
+import BookingDetailsModal from './BookingDetailsModal';
+import BookingsTable from './BookingsTable';
+import CreateBookingForm from './CreateBookingForm';
 
 export default function BookingsDashboard() {
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [editBooking, setEditBooking] = useState<Booking | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // Use the custom hook to fetch bookings and handle adding/editing
   const {
     bookings,
     removeBooking,
@@ -13,48 +20,34 @@ export default function BookingsDashboard() {
     addNewBooking,
   } = useBookings();
 
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editedBooking, setEditedBooking] = useState<Booking | null>(null);
-  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const handleSaveBooking = async (updatedBooking: Booking) => {
+    const saved = await updateSingleBooking(updatedBooking.booking_id, updatedBooking);
+    return saved; // Return the updated booking for further processing if needed
+  };
 
-  const handleSave = async (id: number) => {
-    if (!editedBooking) return;
-    await updateSingleBooking(id, editedBooking);
-    setEditingId(null);
-    setEditedBooking(null);
+  const handleDeleteBooking = async(id: number) => {
+    removeBooking(id);
+  };
+
+  const handleBookingAdded = async (newBooking: Booking) => {
+    addNewBooking(newBooking);
   };
 
   return (
-    <div className="w-full">
-      <CreateBookingForm onCreate={addNewBooking} />
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-xl font-bold">Bookings Dashboard</h1>
+        {/*<button onClick={() => setShowAddModal(true)}>Add Booking</button>*/}
+      </div>
+
       <BookingsTable
         bookings={bookings}
-        loadingId={loadingId}
-        setLoadingId={setLoadingId}
-        editingId={editingId}
-        editedBooking={editedBooking}
-        setEditingId={setEditingId}
-        setEditedBooking={setEditedBooking}
-        onDelete={removeBooking}
-        onSave={handleSave}
-        onCancel={() => {
-          setEditingId(null);
-          setEditedBooking(null);
-        }}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-          const { name, value } = e.target;
-          setEditedBooking(prev =>
-            prev
-              ? {
-                  ...prev,
-                  [name]: ['base_amount', 'number_of_adults'].includes(name)
-                    ? Number(value)
-                    : value,
-                }
-              : null
-          );
-        }}
+        onSave={handleSaveBooking}
+        onDelete={handleDeleteBooking}
       />
+
     </div>
+    
   );
 }
+

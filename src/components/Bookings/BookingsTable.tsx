@@ -1,36 +1,49 @@
+import React, { useState, useEffect } from 'react';
 import { Booking } from '@/types';
-import React, { useState } from 'react';
 import BookingRow from './BookingRow';
 import BookingDetailsModal from './BookingDetailsModal';
 
-export default function BookingsTable({
-  bookings,
-  loadingId,
-  setLoadingId,
-  editingId,
-  editedBooking,
-  setEditingId,
-  setEditedBooking,
-  onDelete,
-  onSave,
-  onCancel,
-  onChange,
-}: {
+interface BookingsTableProps {
   bookings: Booking[];
-  loadingId: string | null;
-  setLoadingId: (id: string | null) => void;
-  editingId: number | null;
-  editedBooking: Booking | null;
-  setEditingId: (id: number | null) => void;
-  setEditedBooking: (b: Booking | null) => void;
+  onSave: (updatedBooking: Booking) => Promise<Booking>;
   onDelete: (id: number) => void;
-  onSave: (id: number) => void;
-  onCancel: () => void;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}) {
+}
 
-const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+export default function BookingsTable({ bookings, onSave, onDelete }: BookingsTableProps) {
+  const [localBookings, setLocalBookings] = useState<Booking[]>(bookings);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null); // Store selected booking
+  const [isModalOpen, setIsModalOpen] = useState(false); // Control modal visibility
+
+  // Update localBookings whenever the bookings prop changes
+  useEffect(() => {
+    setLocalBookings(bookings);
+  }, [bookings]);
+
+  const handleSaveBooking = async (updatedBooking: Booking) => {
+    try {
+      // Send updatedBooking to API via onSave and await response
+      const savedBooking: Booking = await onSave(updatedBooking); // Ensure onSave returns a Booking object
+  
+      const updatedBookings = localBookings.map((booking) =>
+        booking.booking_id === savedBooking.booking_id ? savedBooking : booking
+      );
+      setLocalBookings(updatedBookings);
+  
+      // ✅ Set the full, recalculated booking in the modal
+      setSelectedBooking(savedBooking);
+    } catch (error) {
+      console.error('Save failed:', error);
+    }
+  };
+
+
+  const handleDeleteBooking = (id: number) => {
+    // Delete the booking locally
+    const updatedBookings = localBookings.filter((booking) => booking.booking_id !== id);
+    setLocalBookings(updatedBookings);
+    onDelete(id); // Call the onDelete function passed from the parent
+    setSelectedBooking(null); // Close modal on delete
+  };
 
   const openModal = (booking: Booking) => {
     setSelectedBooking(booking);
@@ -38,66 +51,57 @@ const [isModalOpen, setIsModalOpen] = useState(false);
   };
 
   const closeModal = () => {
-    setIsModalOpen(false);
     setSelectedBooking(null);
+    setIsModalOpen(false);
   };
 
-
   return (
-    <div className="overflow-x-auto max-h-[500px]">
-      <table className="min-w-full divide-y divide-gray-300">
-        <thead className="bg-gray-100 sticky top-0">
+    <div>
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-100 text-gray-700 text-sm">
           <tr>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">Sr.</th>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">Guest</th>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">OTA</th>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">Adults</th>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">Contact</th>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">Check-In</th>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">Check-Out</th>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">Base ₹</th>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">Commission ₹</th>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">GST ₹</th>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">Paid ₹</th>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">Pending ₹</th>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">Total ₹</th>
-            <th className="px-3 py-2 text-sm font-medium text-gray-700">Actions</th>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">Status</th>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">PAC</th>
-            <th className="text-left px-3 py-2 text-sm font-medium text-gray-700">Bank</th>
+            {[
+              "Booking Name",
+              "OTA",
+              "Adults",
+              "Contact",
+              "Check-In",
+              "Check-Out",
+              "Nights",
+              "Pending ₹",
+              "Status",
+              "Bank",
+              "Actions",
+            ].map((header) => (
+              <th key={header} className="px-4 py-3 text-left font-medium">
+                {header}
+              </th>
+            ))}
           </tr>
         </thead>
-        <tbody>
-          {bookings.map((booking, index) => (
+        <tbody className="text-sm divide-y divide-gray-100">
+          {localBookings.map((booking) => (
             <BookingRow
               key={booking.booking_id}
-              index={index}
               booking={booking}
-              loadingId={loadingId}
-              setLoadingId={setLoadingId}
-              editingId={editingId}
-              editedBooking={editedBooking}
-              setEditingId={setEditingId}
-              setEditedBooking={setEditedBooking}
-              onDelete={onDelete}
-              onSave={() => onSave(booking.booking_id)}
-              onCancel={onCancel}
-              onChange={onChange}
-              onRowClick={() => openModal(booking)} // Open modal on row click
+              onSave={handleSaveBooking}
+              onDelete={handleDeleteBooking}
+              onRowClick={() => openModal(booking)}
             />
           ))}
         </tbody>
       </table>
-      <BookingDetailsModal
-        isOpen={isModalOpen}
-        booking={selectedBooking}
-        onClose={closeModal}
-        onSave={(updatedBooking) => {
-          if (updatedBooking.booking_id) {
-            onSave(updatedBooking.booking_id);
-          }
-        }}
-      />
+
+
+      {/* Render the modal outside the table, controlled by isModalOpen */}
+      {isModalOpen && selectedBooking && (
+        <BookingDetailsModal
+          isOpen={!!selectedBooking}
+          booking={selectedBooking}
+          onSave={handleSaveBooking}
+          onClose={closeModal} // Close the modal when needed
+        />
+      )}
     </div>
   );
 }

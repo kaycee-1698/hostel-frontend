@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Booking } from '@/types';
 
 interface BookingDetailsModalProps {
@@ -17,17 +17,30 @@ export default function BookingDetailsModal({
   onSave,
 }: BookingDetailsModalProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedBooking, setEditedBooking] = useState<Booking | null>(booking);
+  const [editedBooking, setEditedBooking] = useState<Booking | null>(null);
 
-  if (!isOpen || !booking) return null;
+  useEffect(() => {
+    setEditedBooking(booking);
+    setIsEditing(false);
+  }, [booking]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (editedBooking) {
-      setEditedBooking({
-        ...editedBooking,
-        [e.target.name]: e.target.value,
-      });
-    }
+  if (!isOpen || !editedBooking || booking === null) return null;
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { name, value, type } = e.target;
+
+    setEditedBooking(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        [name]:
+          type === 'number'
+            ? value === '' ? '' : parseFloat(value)  // allow blank for typing
+            : value,
+      };
+    });
   };
 
   const handleSave = () => {
@@ -38,7 +51,7 @@ export default function BookingDetailsModal({
   };
 
   const handleCancel = () => {
-    setEditedBooking(booking); // Reset to original booking data
+    setEditedBooking(booking);
     setIsEditing(false);
   };
 
@@ -63,12 +76,12 @@ export default function BookingDetailsModal({
                 {isEditing ? (
                   <input
                     name="booking_name"
-                    value={editedBooking?.booking_name || ''}
+                    value={editedBooking.booking_name || ''}
                     onChange={handleInputChange}
                     className="border p-1 rounded w-full"
                   />
                 ) : (
-                  booking.booking_name
+                  booking?.booking_name
                 )}
               </div>
               <div className="mb-2">
@@ -76,12 +89,12 @@ export default function BookingDetailsModal({
                 {isEditing ? (
                   <input
                     name="ota_name"
-                    value={editedBooking?.ota_name || ''}
+                    value={editedBooking.ota_name || ''}
                     onChange={handleInputChange}
                     className="border p-1 rounded w-full"
                   />
                 ) : (
-                  booking.ota_name
+                  booking?.ota_name
                 )}
               </div>
               <div className="mb-2">
@@ -90,12 +103,12 @@ export default function BookingDetailsModal({
                   <input
                     name="number_of_adults"
                     type="number"
-                    value={editedBooking?.number_of_adults || ''}
+                    value={editedBooking.number_of_adults || ''}
                     onChange={handleInputChange}
                     className="border p-1 rounded w-full"
                   />
                 ) : (
-                  booking.number_of_adults
+                  booking?.number_of_adults
                 )}
               </div>
               <div className="mb-2">
@@ -103,12 +116,12 @@ export default function BookingDetailsModal({
                 {isEditing ? (
                   <input
                     name="contact_number"
-                    value={editedBooking?.contact_number || ''}
+                    value={editedBooking.contact_number || ''}
                     onChange={handleInputChange}
                     className="border p-1 rounded w-full"
                   />
                 ) : (
-                  booking.contact_number
+                  booking?.contact_number
                 )}
               </div>
               <div className="mb-2">
@@ -117,7 +130,7 @@ export default function BookingDetailsModal({
                   <input
                     name="check_in"
                     type="date"
-                    value={editedBooking?.check_in || ''}
+                    value={editedBooking.check_in?.substring(0, 10) || ''}
                     onChange={handleInputChange}
                     className="border p-1 rounded w-full"
                   />
@@ -131,7 +144,7 @@ export default function BookingDetailsModal({
                   <input
                     name="check_out"
                     type="date"
-                    value={editedBooking?.check_out || ''}
+                    value={editedBooking.check_out?.substring(0, 10) || ''}
                     onChange={handleInputChange}
                     className="border p-1 rounded w-full"
                   />
@@ -148,7 +161,7 @@ export default function BookingDetailsModal({
                   <input
                     name="base_amount"
                     type="number"
-                    value={editedBooking?.base_amount || ''}
+                    value={editedBooking.base_amount || ''}
                     onChange={handleInputChange}
                     className="border p-1 rounded w-full"
                   />
@@ -166,12 +179,14 @@ export default function BookingDetailsModal({
                 <strong>Paid Amount:</strong>{' '}
                 {isEditing ? (
                   <input
-                    name="payment_received"
-                    type="number"
-                    value={editedBooking?.payment_received || ''}
-                    onChange={handleInputChange}
-                    className="border p-1 rounded w-full"
-                  />
+                  name="payment_received"
+                  type="number"
+                  value={
+                    editedBooking.payment_received ?? ''  // fallback to empty string
+                  }
+                  onChange={handleInputChange}
+                  className="border p-1 rounded w-full"
+                />
                 ) : (
                   `₹${booking.payment_received}`
                 )}
@@ -184,15 +199,11 @@ export default function BookingDetailsModal({
                 ₹{booking.pending_amount + booking.payment_received}
               </div>
               <div className="mb-2">
-                <strong>Profit After Commission:</strong>{' '}
-                ₹{booking.profit_after_commission}
-              </div>
-              <div className="mb-2">
                 <strong>Bank:</strong>{' '}
                 {isEditing ? (
                   <input
                     name="bank"
-                    value={editedBooking?.bank || ''}
+                    value={editedBooking.bank || ''}
                     onChange={handleInputChange}
                     className="border p-1 rounded w-full"
                   />
@@ -239,3 +250,4 @@ export default function BookingDetailsModal({
     </div>
   );
 }
+
