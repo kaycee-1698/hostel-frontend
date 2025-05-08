@@ -37,6 +37,11 @@ export default function Sidebar() {
             <SidebarItem icon="📘" label="Bookings" collapsed={collapsed} />
           </div>
         </Link>
+        <Link href="/dashboard/rooms">
+          <div>
+            <SidebarItem icon="🛏️" label="Manage Rooms" collapsed={collapsed} />
+          </div>
+        </Link>
       </nav>
     </div>
   );

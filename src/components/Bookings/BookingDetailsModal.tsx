@@ -56,7 +56,7 @@ export default function BookingDetailsModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
       <div className="bg-white p-6 rounded-lg max-w-3xl w-full shadow-lg">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Booking Details</h2>

@@ -20,22 +20,35 @@ export interface Guest {
     booking_id: number;
 }
 
-  export interface Booking {
-    booking_id: number;
-    booking_name: string;
-    ota_name: string;
-    number_of_adults: number;
-    contact_number: string;
-    check_in: string;
-    check_out: string;
-    number_of_nights: number;
-    base_amount: number;
-    commission: number;
-    gst: number;
-    payment_received: number;
-    pending_amount: number;
-    payment_status: string;
-    profit_after_commission: number;
-    bank: string;
-    other_info: string;
-  }
+export interface Booking {
+  booking_id: number;
+  booking_name: string;
+  ota_name: string;
+  number_of_adults: number;
+  contact_number: string;
+  check_in: string;
+  check_out: string;
+  number_of_nights: number;
+  base_amount: number;
+  commission: number;
+  gst: number;
+  payment_received: number;
+  pending_amount: number;
+  payment_status: string;
+  bank: string;
+  other_info: string;
+}  
+
+export interface Room {
+  room_id: number;
+  room_name: string;
+  capacity: number;
+  beds: Bed[]; // Array of beds associated with the room
+}
+
+export interface Bed {
+  bed_id: number;
+  status: string;
+  bed_name: string;
+  room_id: number;
+}
