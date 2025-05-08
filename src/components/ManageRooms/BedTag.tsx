@@ -41,11 +41,6 @@ export default function BedTag({
           handleCancelEdit(bed.bed_name);
         }
       }}
-      /* onBlur={() => {
-        setTimeout(() => {
-          handleCancelEdit(bed.bed_name);
-        }, 100); // Allow time for save button to be clicked
-      }}*/
       className="border rounded px-2 py-1 text-sm"
     />
     <button

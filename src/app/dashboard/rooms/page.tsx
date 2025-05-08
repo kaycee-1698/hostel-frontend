@@ -1,4 +1,4 @@
-import ManageRooms from '@/components/Rooms/ManageRooms';
+import ManageRooms from '@/components/ManageRooms/ManageRooms';
 import React from 'react';
 
 export default function RoomsPage() {

@@ -1,7 +1,9 @@
 'use client';
 import { getTodayBookings } from '@/lib/api';
+import { getCurrentDate } from '@/lib/utils';
 import React, { useState, useEffect, use } from 'react';
 import { Booking } from '@/types';
+import { get } from 'http';
 
 interface CheckInSearchProps {
   onSelectBooking: (booking: Booking) => void;
@@ -14,8 +16,7 @@ const CheckInSearch: React.FC<CheckInSearchProps> = ({ onSelectBooking }) => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const today = new Date(Date.now() + 5.5 * 60 * 60 * 1000) // Add 5.5 hours for IST timezone
-        .toISOString().split('T')[0]; // Format YYYY-MM-DD
+        const today = getCurrentDate().toISOString().split('T')[0]; // Format YYYY-MM-DD
         const response = await getTodayBookings(today);
         if (!Array.isArray(response.bookings)) {
             console.error('Invalid response format:', response.bookings);

@@ -42,6 +42,11 @@ export default function Sidebar() {
             <SidebarItem icon="🛏️" label="Manage Rooms" collapsed={collapsed} />
           </div>
         </Link>
+        <Link href="/dashboard/rooms/calendar">
+          <div>
+            <SidebarItem icon="📅" label="Room Calendar" collapsed={collapsed} />
+          </div>
+        </Link>
       </nav>
     </div>
   );
