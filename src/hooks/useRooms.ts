@@ -60,7 +60,22 @@ export function useRooms() {
         const updatedRoom = await getRoomById(roomId);
         setRooms(prev => prev.map(r => (r.room_id === roomId ? updatedRoom : r)));
         return updatedRoom; // Return the updated room for further processing if needed
-        }   
+        };  
+
+    const updateBedName = async (bedId: number, bedName: string) => {
+        const updatedBed = {
+            bed_name: bedName
+        }; 
+        await updateBed(bedId, updatedBed);
+        const updatedBedData = await getBedById(bedId);
+        const roomId = updatedBedData.room_id;
+
+        // Fetch the updated room with its beds
+        const updatedRoom = await getRoomById(roomId);
+        setRooms(prev => prev.map(r => r.room_id === roomId ? updatedRoom : r));
+    
+        return updatedBedData; // Return the updated bed for further processing if needed
+        }
 
     useEffect(() => {
         fetchRooms();
@@ -74,5 +89,6 @@ export function useRooms() {
         updateSingleRoom,
         addBedToRoom,
         removeBedFromRoom,
+        updateBedName
         };
 }

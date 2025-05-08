@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import BedTag from './BedTag';
-import { useRooms } from '@/hooks/useRooms';
 import { Room } from '@/types';
 
 export default function RoomCard({ 
@@ -8,20 +7,24 @@ export default function RoomCard({
   renameRoom, 
   removeRoom,
   addBed,
-  removeBed
+  removeBed,
+  updateBed
 }: { 
   room: Room; 
   renameRoom: (roomId: number, newName: string) => void;
   removeRoom: (roomId: number, roomName: string) => void;
   addBed: (roomId: number, bedName: string) => Promise<any>;
   removeBed: (roomId: number, bedId: number) => Promise<any>;
+  updateBed: (bedId: number, bedName: string) => Promise<any>;
 }) {
 
   const [editingName, setEditingName] = useState(false);
   const [roomNameInput, setRoomNameInput] = useState(room.room_name);
   const [addingBed, setAddingBed] = useState(false);
   const [bedName, setBedName] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);  
+  const roomNameInputRef = useRef<HTMLInputElement>(null);
+  const bedNameInputRef = useRef<HTMLInputElement>(null);
 
   const handleRename = () => {
     if (!roomNameInput.trim()) return;
@@ -48,6 +51,18 @@ export default function RoomCard({
   }
   };
 
+  useEffect(() => {
+    if (editingName && roomNameInputRef.current) {
+      roomNameInputRef.current.focus();
+    }
+  }, [editingName]);
+
+  useEffect(() => {
+    if (addingBed && bedNameInputRef.current) {
+      bedNameInputRef.current.focus();
+    }
+  }, [addingBed]);
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm space-y-4 hover:shadow-md transition-transform hover:-translate-y-0.5">
       {/* Header: Room name + capacity */}
@@ -59,6 +74,11 @@ export default function RoomCard({
               className="border border-gray-300 rounded px-2 py-1 text-sm"
               value={roomNameInput}
               onChange={(e) => setRoomNameInput(e.target.value)}
+              ref={roomNameInputRef}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleRename();
+                if (e.key === 'Escape') setEditingName(false);
+              }}
             />
             <button
               onClick={handleRename}
@@ -107,44 +127,54 @@ export default function RoomCard({
           <BedTag 
           key={bed.bed_id} 
           bed={bed}
-          removeBed={removeBed} />
+          removeBed={removeBed}
+          updateBed={updateBed} 
+          />
         ))}
 
         {/* Add bed button/input */}
         {addingBed ? (
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Bed name"
-              value={bedName}
-              onChange={(e) => setBedName(e.target.value)}
-              className="border border-gray-300 rounded px-2 py-1 text-sm"
-            />
-            <button
-              onClick={handleAddBed}
-              disabled={isAdding}
-              className="text-blue-600 hover:text-blue-800 text-sm disabled:opacity-50"
-              >
-                {isAdding ? 'Adding...' : 'Add'}
-            </button>
-            <button
-              onClick={() => {
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="Bed name"
+            value={bedName}
+            onChange={(e) => setBedName(e.target.value)}
+            className="border border-gray-300 rounded px-2 py-1 text-sm"
+            ref={bedNameInputRef}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleAddBed();
+              if (e.key === 'Escape') {
                 setAddingBed(false);
                 setBedName('');
-              }}
-              className="text-gray-400 hover:text-gray-600 text-sm"
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
+              }
+            }}
+          />
           <button
-            onClick={() => setAddingBed(true)}
-            className="text-sm text-gray-600 hover:text-blue-600 underline"
+            onClick={handleAddBed}
+            disabled={isAdding || !bedName.trim()}
+            className="text-green-600 hover:text-green-800 text-sm disabled:opacity-50"
           >
-            + Add Bed
+            {isAdding ? 'Saving...' : 'Save'}
           </button>
-        )}
+          <button
+            onClick={() => {
+              setAddingBed(false);
+              setBedName('');
+            }}
+            className="text-gray-400 hover:text-gray-600 text-sm"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setAddingBed(true)}
+          className="text-sm text-gray-600 hover:text-blue-600 underline"
+        >
+          + Add Bed
+        </button>
+      )}
       </div>
     </div>
   );

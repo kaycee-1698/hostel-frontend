@@ -5,8 +5,8 @@ import AddRoomModal from './AddRoomModal';
 import { useRooms } from '@/hooks/useRooms';
 
 export default function ManageRooms() {
+    const {rooms, addRoom, removeRoom, updateSingleRoom, addBedToRoom, removeBedFromRoom, updateBedName } = useRooms();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const { rooms, addRoom, removeRoom, updateSingleRoom, addBedToRoom, removeBedFromRoom } = useRooms();
     const [successMessage, setSuccessMessage] = useState('');
   
     const handleAddRoom = async (name: string) => {
@@ -26,6 +26,24 @@ export default function ManageRooms() {
         setSuccessMessage(`Room "${roomName}" deleted successfully.`);
         setTimeout(() => setSuccessMessage(''), 10000);
     }; 
+
+    const handleAddBed = async (roomId: number, bedName: string) => {
+        await addBedToRoom(roomId, bedName);
+        setSuccessMessage(`Bed "${bedName}" added successfully.`);
+        setTimeout(() => setSuccessMessage(''), 10000);
+    };
+
+    const handleDeleteBed = async (roomId: number, bedId: number) => {
+        await removeBedFromRoom(roomId, bedId);
+        setSuccessMessage(`Bed deleted successfully.`);
+        setTimeout(() => setSuccessMessage(''), 10000);
+    };
+
+    const handleEditBed = async (bedId: number, newName: string) => {
+        await updateBedName(bedId, newName);
+        setSuccessMessage(`Bed name updated to "${newName}" successfully.`);
+        setTimeout(() => setSuccessMessage(''), 10000);
+    };
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -51,8 +69,9 @@ export default function ManageRooms() {
                 room={room}
                 renameRoom={handleEditRoom}
                 removeRoom={handleDeleteRoom}
-                addBed={addBedToRoom}
-                removeBed = {removeBedFromRoom} />
+                addBed={handleAddBed}
+                removeBed = {handleDeleteBed}
+                updateBed = {handleEditBed} />
             ))}
         </div>
         <AddRoomModal
