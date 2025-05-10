@@ -17,8 +17,6 @@ export function useCalendarBookings(startDate: Date, endDate: Date): {
     setLoading(true);
     setError(null);
     try {
-      console.log("Start date in hook" + formatDate(startDate));
-      console.log("End date in hook" + formatDate(endDate));
       const data = await getBookingsByBedAndDateRange(
         formatDate(startDate),
         formatDate(endDate)

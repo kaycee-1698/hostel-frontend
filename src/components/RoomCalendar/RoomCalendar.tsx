@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import { useRooms } from '@/hooks/useRooms';
 import { useBookings } from '@/hooks/useBookings';
@@ -24,8 +24,8 @@ export default function RoomCalendar() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { rooms } = useRooms();
-  const { calendarBookings, loading, error } = useCalendarBookings(startDate, endDate);
-  const { addNewBooking, fetchBookings } = useBookings();
+  const { calendarBookings, loading, error, fetchCalendarBookings } = useCalendarBookings(startDate, endDate);
+  const { addNewBooking } = useBookings();
 
   const toggleRoom = (roomId: number) => {
     setExpandedRooms((prev) => ({
@@ -36,14 +36,13 @@ export default function RoomCalendar() {
 
   const handleAddBooking = async (newBooking: Booking) => {
     await addNewBooking(newBooking);
-    await fetchBookings(); // Refresh bookings after adding a new one
+    await fetchCalendarBookings(); // Refresh bookings after adding a new one
     setIsModalOpen(false);
   };
 
-  const dates: Date[] = [];
-  for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
-    dates.push(new Date(d));
-  }
+  const dates = Array.from({ length: Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) }, (_, i) =>
+    new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i)
+  );
 
   return (
     <div className="p-4">

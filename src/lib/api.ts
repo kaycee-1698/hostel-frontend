@@ -29,7 +29,6 @@ export const createBooking = async (bookingData: Partial<Booking>) => {
       },
       body: JSON.stringify(bookingData),
     });
-    console.log('Booking data:', bookingData);
 
     if (!response.ok) {
       console.error('wrong Booking data:', bookingData);
@@ -88,21 +87,17 @@ export async function updateBooking(id: number, editedBooking: any) {
 
   export async function getTodayBookings(today: string) { 
     const res = await fetch(`${BASE_URL}/bookings?check_in=${today}`);
-    console.log('Bookings fetched:', res);
     if (!res.ok) {
       const errorText = await res.text();
       console.error(`Failed to fetch today's bookings:`, errorText);
       throw new Error('Failed to fetch today\'s bookings');
     }
     const data = await res.json();
-    console.log('Bookings data:', data); // Check if data is received properly
     return data;
     
   }
 
   export async function getBookingsByBedAndDateRange (startDate: string, endDate: string) {
-    console.log("Start date in api" + startDate);
-    console.log("End date in api" + endDate);
     const res = await fetch(`${BASE_URL}/bookings/calendar?startDate=${startDate}&endDate=${endDate}`);
     if (!res.ok) {
       const errorText = await res.text();
