@@ -37,6 +37,7 @@ export interface Booking {
   payment_status: string;
   bank: string;
   other_info: string;
+  guests_per_room?: Record<string, number>;
 }  
 
 export interface Room {
@@ -52,3 +53,9 @@ export interface Bed {
   bed_name: string;
   room_id: number;
 }
+
+export type CalendarBookings = {
+  [bedId: number]: {
+    [date: string]: string;
+  };
+};

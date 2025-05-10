@@ -100,6 +100,19 @@ export async function updateBooking(id: number, editedBooking: any) {
     
   }
 
+  export async function getBookingsByBedAndDateRange (startDate: string, endDate: string) {
+    console.log("Start date in api" + startDate);
+    console.log("End date in api" + endDate);
+    const res = await fetch(`${BASE_URL}/bookings/calendar?startDate=${startDate}&endDate=${endDate}`);
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`Failed to fetch bookings by bed and date range:`, errorText);
+      throw new Error('Failed to fetch bookings by bed and date range');
+    }
+    return res.json();
+  }
+
+
   //file upload functions
 
   export async function uploadFile(file: File): Promise<string> {

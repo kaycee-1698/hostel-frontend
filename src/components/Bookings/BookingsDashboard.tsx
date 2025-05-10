@@ -1,24 +1,22 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Booking } from '@/types';
 import { useBookings } from '@/hooks/useBookings';
-import BookingDetailsModal from './BookingDetailsModal';
+import { useRooms } from '@/hooks/useRooms';
 import BookingsTable from './BookingsTable';
-import CreateBookingForm from './CreateBookingForm';
+import AddBookingModal from './AddBookingModal';
 
 export default function BookingsDashboard() {
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [editBooking, setEditBooking] = useState<Booking | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
 
-  // Use the custom hook to fetch bookings and handle adding/editing
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const {
     bookings,
     removeBooking,
     updateSingleBooking,
     addNewBooking,
   } = useBookings();
+  const { rooms } = useRooms();
 
   const handleSaveBooking = async (updatedBooking: Booking) => {
     const saved = await updateSingleBooking(updatedBooking.booking_id, updatedBooking);
@@ -29,21 +27,33 @@ export default function BookingsDashboard() {
     removeBooking(id);
   };
 
-  const handleBookingAdded = async (newBooking: Booking) => {
-    addNewBooking(newBooking);
+  const handleAddBooking = async (newBooking: Booking) => {
+    await addNewBooking(newBooking);
+    setIsModalOpen(false);
   };
 
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold">Bookings Dashboard</h1>
-        {/*<button onClick={() => setShowAddModal(true)}>Add Booking</button>*/}
+        <button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow"
+                >
+                + Add Booking
+            </button>
       </div>
 
       <BookingsTable
         bookings={bookings}
         onSave={handleSaveBooking}
         onDelete={handleDeleteBooking}
+      />
+      <AddBookingModal
+        isOpen={isModalOpen}
+        rooms={rooms}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleAddBooking}
       />
 
     </div>
