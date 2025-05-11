@@ -56,6 +56,9 @@ export interface Bed {
 
 export type CalendarBookings = {
   [bedId: number]: {
-    [date: string]: string;
+    [date: string]: {
+      booking_id: number;
+      booking_name: string;
+    };
   };
 };

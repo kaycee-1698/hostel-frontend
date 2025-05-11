@@ -22,6 +22,8 @@ export function useBookings() {
     setBookings(sorted);
   };
 
+
+
   const removeBooking = async (id: number) => {
     if (!confirm('Are you sure you want to delete this booking?')) return;
     setLoadingId(String(id));
@@ -42,6 +44,11 @@ export function useBookings() {
     await fetchBookings();
   };
 
+  const getSingleBooking = async (id: number) => {
+    const selectedBooking = await getBookingById(id);
+    return selectedBooking;
+  };
+
   useEffect(() => {
     fetchBookings();
   }, []);
@@ -53,5 +60,6 @@ export function useBookings() {
     removeBooking,
     updateSingleBooking,
     addNewBooking,
+    getSingleBooking,
   };
 }

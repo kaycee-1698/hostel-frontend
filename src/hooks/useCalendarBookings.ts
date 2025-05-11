@@ -22,6 +22,7 @@ export function useCalendarBookings(startDate: Date, endDate: Date): {
         formatDate(endDate)
       );
       setCalendarBookings(data);
+      console.log(data);
     } catch (err) {
       console.error(err);
       setError('Failed to load calendar bookings');

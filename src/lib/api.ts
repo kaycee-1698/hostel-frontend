@@ -1,4 +1,4 @@
-import { Booking } from '@/types';
+import { Booking, CalendarBookings } from '@/types';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -97,7 +97,7 @@ export async function updateBooking(id: number, editedBooking: any) {
     
   }
 
-  export async function getBookingsByBedAndDateRange (startDate: string, endDate: string) {
+  export async function getBookingsByBedAndDateRange (startDate: string, endDate: string): Promise<CalendarBookings>  {
     const res = await fetch(`${BASE_URL}/bookings/calendar?startDate=${startDate}&endDate=${endDate}`);
     if (!res.ok) {
       const errorText = await res.text();
