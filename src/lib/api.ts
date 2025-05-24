@@ -23,23 +23,23 @@ export async function getAllGuests() {
 export const createBooking = async (bookingData: Partial<Booking>) => {
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(bookingData),
-    });
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(bookingData),
+        });
 
-    if (!response.ok) {
-      console.error('wrong Booking data:', bookingData);
-      throw new Error('Failed to create booking');
-      
-    }
+        const data = await response.json();
 
-    return await response.json();
-  } catch (error) {
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to create booking');
+        }
+
+        return data;
+        
+  } catch (error: any) {
     console.error('Error in createBooking:', error);
-    console.error('Booking data:', bookingData);
     throw error;
   }
 };
@@ -106,6 +106,12 @@ export async function updateBooking(id: number, editedBooking: any) {
     }
     return res.json();
   }
+
+  export const getBookingWithBedsAndRooms = async (id: number) => {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings/details?booking_id=${id}`);
+    if (!res.ok) throw new Error('Failed to fetch bed and room details for booking');
+    return res.json();
+  };
 
 
   //file upload functions

@@ -38,6 +38,7 @@ export interface Booking {
   bank: string;
   other_info: string;
   guests_per_room?: Record<string, number>;
+  rooms?: BookingRoom[];
 }  
 
 export interface Room {
@@ -62,3 +63,19 @@ export type CalendarBookings = {
     };
   };
 };
+
+export interface BookingRoom {
+  booking_room_id: number;
+  room_id: number;
+  room_name: string;
+  beds: BookingBed[];
+}
+
+export interface BookingBed {
+  booking_bed_id: number;
+  bed_id: number;
+  bed_name: string;
+  room_id: number;
+  check_in: string;
+  check_out: string;
+}

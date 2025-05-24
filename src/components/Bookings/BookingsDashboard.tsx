@@ -14,7 +14,7 @@ export default function BookingsDashboard() {
     bookings,
     removeBooking,
     updateSingleBooking,
-    addNewBooking,
+    fetchBookings,
   } = useBookings();
   const { rooms } = useRooms();
 
@@ -27,8 +27,8 @@ export default function BookingsDashboard() {
     removeBooking(id);
   };
 
-  const handleAddBooking = async (newBooking: Booking) => {
-    await addNewBooking(newBooking);
+  const handleSuccess = async () => {
+    await fetchBookings();
     setIsModalOpen(false);
   };
 
@@ -53,7 +53,7 @@ export default function BookingsDashboard() {
         isOpen={isModalOpen}
         rooms={rooms}
         onClose={() => setIsModalOpen(false)}
-        onSave={handleAddBooking}
+        onSuccess={handleSuccess}
       />
 
     </div>

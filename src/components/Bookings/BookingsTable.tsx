@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Booking } from '@/types';
 import BookingRow from './BookingRow';
 import BookingDetailsModal from './BookingDetailsModal';
+import { useBookings } from '@/hooks/useBookings';
 
 interface BookingsTableProps {
   bookings: Booking[];
@@ -13,6 +14,8 @@ export default function BookingsTable({ bookings, onSave, onDelete }: BookingsTa
   const [localBookings, setLocalBookings] = useState<Booking[]>(bookings);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null); // Store selected booking
   const [isModalOpen, setIsModalOpen] = useState(false); // Control modal visibility
+  
+  const { getBedsAndRoomsForBooking } = useBookings();
 
   // Update localBookings whenever the bookings prop changes
   useEffect(() => {
@@ -36,7 +39,6 @@ export default function BookingsTable({ bookings, onSave, onDelete }: BookingsTa
     }
   };
 
-
   const handleDeleteBooking = (id: number) => {
     // Delete the booking locally
     const updatedBookings = localBookings.filter((booking) => booking.booking_id !== id);
@@ -45,7 +47,8 @@ export default function BookingsTable({ bookings, onSave, onDelete }: BookingsTa
     setSelectedBooking(null); // Close modal on delete
   };
 
-  const openModal = (booking: Booking) => {
+  const handleBookingClick = async (bookingId: number) => {
+    const booking = await getBedsAndRoomsForBooking(bookingId);
     setSelectedBooking(booking);
     setIsModalOpen(true);
   };
@@ -86,7 +89,7 @@ export default function BookingsTable({ bookings, onSave, onDelete }: BookingsTa
               booking={booking}
               onSave={handleSaveBooking}
               onDelete={handleDeleteBooking}
-              onRowClick={() => openModal(booking)}
+              onRowClick={() => handleBookingClick(booking.booking_id)}
             />
           ))}
         </tbody>

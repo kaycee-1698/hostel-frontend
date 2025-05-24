@@ -24,7 +24,7 @@ export default function RoomCalendar() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   const { rooms } = useRooms();
-  const { addNewBooking, updateSingleBooking, getSingleBooking } = useBookings();
+  const {updateSingleBooking, getBedsAndRoomsForBooking } = useBookings();
   const { calendarBookings, loading, error, fetchCalendarBookings } = useCalendarBookings(startDate, endDate);
 
   const dates = useMemo(() => {
@@ -39,8 +39,7 @@ export default function RoomCalendar() {
     }));
   };
 
-  const handleAddBooking = async (newBooking: Booking) => {
-    await addNewBooking(newBooking);
+  const handleSuccess = async () => {
     await fetchCalendarBookings();
     setIsAddModalOpen(false);
   };
@@ -53,7 +52,7 @@ export default function RoomCalendar() {
   };
 
   const handleBookingClick = async (bookingId: number) => {
-    const booking = await getSingleBooking(bookingId);
+    const booking = await getBedsAndRoomsForBooking(bookingId);
     setSelectedBooking(booking);
     setIsBookingModalOpen(true);
   };
@@ -137,7 +136,7 @@ export default function RoomCalendar() {
         isOpen={isAddModalOpen}
         rooms={rooms}
         onClose={() => setIsAddModalOpen(false)}
-        onSave={handleAddBooking}
+        onSuccess={handleSuccess}
       />
 
       {isBookingModalOpen && selectedBooking && (

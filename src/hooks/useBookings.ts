@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getAllBookings, deleteBooking, updateBooking, createBooking, getBookingById } from '@/lib/api';
+import { getAllBookings, deleteBooking, updateBooking, createBooking, getBookingById, getBookingWithBedsAndRooms } from '@/lib/api';
 import { Booking } from '@/types';
 
 export function useBookings() {
@@ -40,12 +40,22 @@ export function useBookings() {
   };
 
   const addNewBooking = async (booking: Partial<Booking>) => {
-    await createBooking(booking);
-    await fetchBookings();
+    try {
+      await createBooking(booking);
+    } catch (error) {
+      console.error('Booking creation error:', error);
+      throw error; // rethrow for component to catch
+    }
   };
+
 
   const getSingleBooking = async (id: number) => {
     const selectedBooking = await getBookingById(id);
+    return selectedBooking;
+  };
+
+  const getBedsAndRoomsForBooking = async (id: number) => {
+    const selectedBooking = await getBookingWithBedsAndRooms(id);
     return selectedBooking;
   };
 
@@ -61,5 +71,6 @@ export function useBookings() {
     updateSingleBooking,
     addNewBooking,
     getSingleBooking,
+    getBedsAndRoomsForBooking
   };
 }

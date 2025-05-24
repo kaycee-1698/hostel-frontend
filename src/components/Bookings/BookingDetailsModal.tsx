@@ -57,7 +57,8 @@ export default function BookingDetailsModal({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
-      <div className="bg-white p-6 rounded-lg max-w-3xl w-full shadow-lg">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl shadow-xl relative max-h-[90vh] overflow-y-auto scrollbar-none">
+        
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Booking Details</h2>
           <button
@@ -152,6 +153,9 @@ export default function BookingDetailsModal({
                   new Date(booking.check_out).toLocaleDateString()
                 )}
               </div>
+              <div className="mb-2">
+                ({booking.number_of_nights} night{booking.number_of_nights > 1 ? 's' : ''})
+              </div>
             </div>
 
             <div className="w-1/2 pl-4">
@@ -211,6 +215,46 @@ export default function BookingDetailsModal({
                   booking.bank
                 )}
               </div>
+              <div className="mb-2">
+                <strong>Other info:</strong>{' '}
+                {isEditing ? (
+                  <input
+                    name="bank"
+                    value={editedBooking.other_info || ''}
+                    onChange={handleInputChange}
+                    className="border p-1 rounded w-full"
+                  />
+                ) : (
+                  booking.other_info
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="mb-6">
+            <div className="text-lg font-semibold mb-2">Assigned Rooms & Beds</div>
+            <div className="overflow-hidden rounded-xl border border-gray-200">
+              <div className="grid grid-cols-3 bg-gray-100 text-sm font-medium text-gray-700 px-4 py-2">
+                <div><strong>Adult</strong></div>
+                <div><strong>Room</strong></div>
+                <div><strong>Bed</strong></div>
+              </div>
+              {editedBooking.rooms
+                ?.flatMap((room) =>
+                  room.beds.map((bed) => ({
+                    bed,
+                    room_name: room.room_name,
+                  }))
+                )
+                .map(({ bed, room_name }, i) => (
+                  <div
+                    key={bed.booking_bed_id}
+                    className="grid grid-cols-3 items-center text-sm px-4 py-2 even:bg-gray-50 hover:bg-gray-100 transition"
+                  >
+                    <div className="text-gray-800">Adult {i + 1}</div>
+                    <div className="text-gray-600">{room_name}</div>
+                    <div className="text-gray-600">{bed.bed_name}</div>
+                  </div>
+                ))}
             </div>
           </div>
         </div>
