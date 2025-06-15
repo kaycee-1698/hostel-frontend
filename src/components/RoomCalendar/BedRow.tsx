@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/dateUtils";
 
 type BedRowProps = {
   bedId: number;

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getBookingsByBedAndDateRange } from '@/lib/api';
 import { CalendarBookings } from '@/types';
-import {formatDate } from '@/lib/utils';
+import {formatDate } from '@/lib/dateUtils';
 
 export function useCalendarBookings(startDate: Date, endDate: Date): {
   calendarBookings: CalendarBookings;

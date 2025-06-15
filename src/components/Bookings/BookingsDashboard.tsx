@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Booking } from '@/types';
 import { useBookings } from '@/hooks/useBookings';
 import { useRooms } from '@/hooks/useRooms';
 import BookingsTable from './BookingsTable';
@@ -13,15 +12,9 @@ export default function BookingsDashboard() {
   const {
     bookings,
     removeBooking,
-    updateSingleBooking,
     fetchBookings,
   } = useBookings();
   const { rooms } = useRooms();
-
-  const handleSaveBooking = async (updatedBooking: Booking) => {
-    const saved = await updateSingleBooking(updatedBooking.booking_id, updatedBooking);
-    return saved; // Return the updated booking for further processing if needed
-  };
 
   const handleDeleteBooking = async(id: number) => {
     removeBooking(id);
@@ -46,8 +39,8 @@ export default function BookingsDashboard() {
 
       <BookingsTable
         bookings={bookings}
-        onSave={handleSaveBooking}
         onDelete={handleDeleteBooking}
+        rooms={rooms}
       />
       <AddBookingModal
         isOpen={isModalOpen}

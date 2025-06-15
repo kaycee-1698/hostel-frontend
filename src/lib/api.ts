@@ -69,11 +69,14 @@ export async function deleteBooking(id: number) {
     return res.json();
   }
 
-export async function updateBooking(id: number, editedBooking: any) {
+export async function updateBooking(id: number, editedBooking: any, requiresReassignment: boolean) {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editedBooking),
+      body: JSON.stringify({
+      ...editedBooking,
+      requiresReassignment,
+    }),
     });
 
     if (!res.ok) {

@@ -25,15 +25,8 @@ export default function AddRoomModal({ isOpen, onClose, onSave }: AddRoomModalPr
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
-      <div className="bg-white rounded-lg p-6 w-80 shadow-lg relative">
-        <button
-          onClick={handleClose}
-          className="absolute top-2 right-3 text-gray-400 hover:text-gray-600 text-xl"
-        >
-          &times;
-        </button>
-        <h2 className="text-lg font-semibold mb-4">Enter Room Name</h2>
+    <div>
+      <h2 className="text-lg font-semibold mb-4">Enter Room Name</h2>
         <input
           type="text"
           value={roomName}
@@ -55,7 +48,6 @@ export default function AddRoomModal({ isOpen, onClose, onSave }: AddRoomModalPr
             Save
           </button>
         </div>
-      </div>
     </div>
   );
 }

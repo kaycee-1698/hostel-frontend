@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Booking } from '@/types';
+import { Booking, Room } from '@/types';
 import BookingRow from './BookingRow';
 import BookingDetailsModal from './BookingDetailsModal';
 import { useBookings } from '@/hooks/useBookings';
 
 interface BookingsTableProps {
   bookings: Booking[];
-  onSave: (updatedBooking: Booking) => Promise<Booking>;
   onDelete: (id: number) => void;
+  rooms: Room[];
 }
 
-export default function BookingsTable({ bookings, onSave, onDelete }: BookingsTableProps) {
+export default function BookingsTable({ bookings, onDelete, rooms }: BookingsTableProps) {
   const [localBookings, setLocalBookings] = useState<Booking[]>(bookings);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null); // Store selected booking
   const [isModalOpen, setIsModalOpen] = useState(false); // Control modal visibility
@@ -22,11 +22,8 @@ export default function BookingsTable({ bookings, onSave, onDelete }: BookingsTa
     setLocalBookings(bookings);
   }, [bookings]);
 
-  const handleSaveBooking = async (updatedBooking: Booking) => {
+  const handleSaveBooking = async (savedBooking: Booking) => {
     try {
-      // Send updatedBooking to API via onSave and await response
-      const savedBooking: Booking = await onSave(updatedBooking); // Ensure onSave returns a Booking object
-  
       const updatedBookings = localBookings.map((booking) =>
         booking.booking_id === savedBooking.booking_id ? savedBooking : booking
       );
@@ -34,6 +31,7 @@ export default function BookingsTable({ bookings, onSave, onDelete }: BookingsTa
   
       // ✅ Set the full, recalculated booking in the modal
       setSelectedBooking(savedBooking);
+      
     } catch (error) {
       console.error('Save failed:', error);
     }
@@ -103,6 +101,7 @@ export default function BookingsTable({ bookings, onSave, onDelete }: BookingsTa
           booking={selectedBooking}
           onSave={handleSaveBooking}
           onClose={closeModal} // Close the modal when needed
+          rooms={rooms} // Pass the rooms prop to the modal
         />
       )}
     </div>

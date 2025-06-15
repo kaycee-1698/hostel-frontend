@@ -1,4 +1,4 @@
-import { format } from '@/lib/utils';
+import { format } from '@/lib/dateUtils';
 
 export default function CalendarHeader({ dates }: { dates: Date[] }) {
   return (

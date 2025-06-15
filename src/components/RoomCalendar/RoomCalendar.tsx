@@ -11,7 +11,7 @@ import BedRow from './BedRow';
 import AddBookingModal from '../Bookings/AddBookingModal';
 import BookingDetailsModal from '../Bookings/BookingDetailsModal';
 
-import { addDays, toIST } from '@/lib/utils';
+import { addDays, toIST } from '@/lib/dateUtils';
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/solid';
 import { Booking } from '@/types';
 
@@ -44,17 +44,21 @@ export default function RoomCalendar() {
     setIsAddModalOpen(false);
   };
 
-  const handleSaveBooking = async (updatedBooking: Booking) => {
-    const saved = await updateSingleBooking(updatedBooking.booking_id, updatedBooking);
+  const handleSaveBooking = async (savedBooking: Booking) => {
     await fetchCalendarBookings();
-    setSelectedBooking(saved);
-    return saved;
+    setSelectedBooking(savedBooking);
+    return savedBooking;
   };
 
   const handleBookingClick = async (bookingId: number) => {
     const booking = await getBedsAndRoomsForBooking(bookingId);
     setSelectedBooking(booking);
     setIsBookingModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsBookingModalOpen(false);
+    setSelectedBooking(null);
   };
 
   return (
@@ -134,7 +138,6 @@ export default function RoomCalendar() {
 
       <AddBookingModal
         isOpen={isAddModalOpen}
-        rooms={rooms}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={handleSuccess}
       />
@@ -143,11 +146,9 @@ export default function RoomCalendar() {
         <BookingDetailsModal
           isOpen={isBookingModalOpen}
           booking={selectedBooking}
-          onClose={() => {
-            setIsBookingModalOpen(false);
-            setSelectedBooking(null);
-          }}
           onSave={handleSaveBooking}
+          onClose={closeModal} // Close the modal when needed
+          rooms={rooms} // Pass the rooms prop to the modal
         />
       )}
     </div>

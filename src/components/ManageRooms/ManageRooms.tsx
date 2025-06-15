@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import RoomCard from './RoomCard';
 import AddRoomModal from './AddRoomModal';
+import Modal from '../Modal/Modal';
 import { useRooms } from '@/hooks/useRooms';
 
 export default function ManageRooms() {
@@ -74,11 +75,15 @@ export default function ManageRooms() {
                 updateBed = {handleEditBed} />
             ))}
         </div>
-        <AddRoomModal
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create Room">
+            <AddRoomModal 
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
             onSave={handleAddRoom}
         />
+        </Modal>
+        
+            
     </div>
   );
 }

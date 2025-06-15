@@ -1,6 +1,6 @@
 'use client';
 import { getTodayBookings } from '@/lib/api';
-import { getCurrentDate } from '@/lib/utils';
+import { getCurrentDate } from '@/lib/dateUtils';
 import React, { useState, useEffect, use } from 'react';
 import { Booking } from '@/types';
 import { get } from 'http';
