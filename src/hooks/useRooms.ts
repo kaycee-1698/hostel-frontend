@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getAllRooms, getRoomById, createRoom, updateRoom, deleteRoom, updateRoomCapacity, getAllBeds, getBedById, createBed, updateBed, deleteBed} from '@/lib/api';
+import { getAllRooms, getRoomById, createRoom, updateRoom, deleteRoom, updateRoomCapacity, getAllBeds, getBedById, createBed, updateBed, deleteBed, getRoomAvailability} from '@/lib/api';
 import { Room, Bed } from '@/types';
 
 export function useRooms() {
@@ -77,6 +77,11 @@ export function useRooms() {
         return updatedBedData; // Return the updated bed for further processing if needed
         }
 
+    const IsRoomAvailable = async (roomId: number, checkIn: string, checkOut: string, bedsRequired: number, excludeBookingId: number | null) => {
+        const availability = await getRoomAvailability(roomId, checkIn, checkOut, bedsRequired, excludeBookingId);
+        return availability;
+    }
+
     useEffect(() => {
         fetchRooms();
         }, []);
@@ -89,6 +94,7 @@ export function useRooms() {
         updateSingleRoom,
         addBedToRoom,
         removeBedFromRoom,
-        updateBedName
+        updateBedName,
+        IsRoomAvailable,
         };
 }

@@ -12,7 +12,6 @@ interface BookingDetailsModalProps {
   onClose: () => void;
   booking: Booking | null;
   onSave: (savedBooking: Booking) => void;
-  rooms: Room[];
 }
 
 export default function BookingDetailsModal({
@@ -20,7 +19,6 @@ export default function BookingDetailsModal({
   onClose,
   booking,
   onSave,
-  rooms,
 }: BookingDetailsModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null);
@@ -37,12 +35,15 @@ export default function BookingDetailsModal({
   if (!booking || !editedBooking) return <Modal isOpen={true} onClose={onClose} title="Loading...">Loading booking...</Modal>;
 
   const handleSave = async (updatedBooking: Partial<Booking>) => {
-    if (updatedBooking) {
+    try {
+      if (updatedBooking) {
       const requiresReassignment = checkIfReassignmentNeeded(booking, updatedBooking);
       const savedBooking: Booking = await updateSingleBooking(updatedBooking, requiresReassignment);
-      
       onSave(savedBooking);
       setIsEditing(false);
+      }
+    } catch (error: any) {
+      throw new Error(error.message || 'Something went wrong');
     }
   };
 
@@ -93,7 +94,6 @@ export default function BookingDetailsModal({
       {isEditing ? (
           <Modal isOpen={isOpen} onClose={onClose} title="Edit Booking">
             <BookingForm
-              rooms={rooms}
               initialData={editedBookingWithGuests}
               onClose={handleCancel}
               onSave={handleSave}

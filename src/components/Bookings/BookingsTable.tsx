@@ -7,10 +7,9 @@ import { useBookings } from '@/hooks/useBookings';
 interface BookingsTableProps {
   bookings: Booking[];
   onDelete: (id: number) => void;
-  rooms: Room[];
 }
 
-export default function BookingsTable({ bookings, onDelete, rooms }: BookingsTableProps) {
+export default function BookingsTable({ bookings, onDelete}: BookingsTableProps) {
   const [localBookings, setLocalBookings] = useState<Booking[]>(bookings);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null); // Store selected booking
   const [isModalOpen, setIsModalOpen] = useState(false); // Control modal visibility
@@ -34,6 +33,7 @@ export default function BookingsTable({ bookings, onDelete, rooms }: BookingsTab
       
     } catch (error) {
       console.error('Save failed:', error);
+      throw new Error(error instanceof Error ? error.message : 'Something went wrong');
     }
   };
 
@@ -101,7 +101,6 @@ export default function BookingsTable({ bookings, onDelete, rooms }: BookingsTab
           booking={selectedBooking}
           onSave={handleSaveBooking}
           onClose={closeModal} // Close the modal when needed
-          rooms={rooms} // Pass the rooms prop to the modal
         />
       )}
     </div>

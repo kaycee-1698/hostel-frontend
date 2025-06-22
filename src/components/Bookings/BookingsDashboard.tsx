@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useBookings } from '@/hooks/useBookings';
-import { useRooms } from '@/hooks/useRooms';
 import BookingsTable from './BookingsTable';
 import AddBookingModal from './AddBookingModal';
 
@@ -14,7 +13,6 @@ export default function BookingsDashboard() {
     removeBooking,
     fetchBookings,
   } = useBookings();
-  const { rooms } = useRooms();
 
   const handleDeleteBooking = async(id: number) => {
     removeBooking(id);
@@ -40,11 +38,9 @@ export default function BookingsDashboard() {
       <BookingsTable
         bookings={bookings}
         onDelete={handleDeleteBooking}
-        rooms={rooms}
       />
       <AddBookingModal
         isOpen={isModalOpen}
-        rooms={rooms}
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleSuccess}
       />

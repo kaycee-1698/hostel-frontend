@@ -171,6 +171,25 @@ export async function updateBooking(id: number, editedBooking: any, requiresReas
     return res.json();
   }
 
+  export async function getRoomAvailability(roomId: number, checkIn: string, checkOut: string, bedsRequired: number, excludeBookingId: number | null) {
+    const params = new URLSearchParams({
+      check_in: checkIn,
+      check_out: checkOut,
+      beds_required: bedsRequired.toString(),
+    });
+
+    if (excludeBookingId) {
+      params.append('exclude_booking_id', excludeBookingId.toString());
+    }
+
+    const res = await fetch(`${BASE_URL}/rooms/${roomId}/availability?${params.toString()}`);
+    if (!res.ok) {
+      throw new Error('Failed to check room availability');
+    }
+    return res.json();
+  }
+
+
   //bed api functions
 
   export async function getAllBeds() {

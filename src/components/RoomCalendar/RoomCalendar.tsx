@@ -24,7 +24,7 @@ export default function RoomCalendar() {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   const { rooms } = useRooms();
-  const {updateSingleBooking, getBedsAndRoomsForBooking } = useBookings();
+  const {getBedsAndRoomsForBooking } = useBookings();
   const { calendarBookings, loading, error, fetchCalendarBookings } = useCalendarBookings(startDate, endDate);
 
   const dates = useMemo(() => {
@@ -148,7 +148,6 @@ export default function RoomCalendar() {
           booking={selectedBooking}
           onSave={handleSaveBooking}
           onClose={closeModal} // Close the modal when needed
-          rooms={rooms} // Pass the rooms prop to the modal
         />
       )}
     </div>

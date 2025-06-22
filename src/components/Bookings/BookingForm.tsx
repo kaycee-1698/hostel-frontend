@@ -1,26 +1,26 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Booking, Room } from '@/types';
+import { Booking } from '@/types';
 import { formatISO, addDays, differenceInDays } from 'date-fns';
-
-interface BookingFormProps {
-  rooms: Room[];
-  initialData?: Partial<Booking>; // to prefill for edit mode
-  onSave: (bookingData: Partial<Booking>) => Promise<void>;
-  onClose: () => void;
-  onSuccess?: () => void;
-}
+import { useRooms } from '@/hooks/useRooms';
 
 const OTA_OPTIONS = ['Direct', 'Website', 'Booking.com', 'Hostelworld', 'Makemytrip', 'Extension'];
 
-export default function BookingForm({
-  rooms,
+export default function BookingForm({ 
   initialData = {},
   onSave,
   onClose,
-  onSuccess,
-}: BookingFormProps) {
+  onSuccess, }: { 
+    initialData?: Partial<Booking>; // to prefill for edit mode
+    onSave: (bookingData: Partial<Booking>) => Promise<void>;
+    onClose: () => void;
+    onSuccess?: () => void;
+ }) {
+
+  // Custom hook to fetch rooms and check availability
+  const { rooms, IsRoomAvailable } = useRooms();
+
   // Default dates
   const todayISO = formatISO(new Date(), { representation: 'date' });
   const tomorrowISO = formatISO(addDays(new Date(), 1), { representation: 'date' });
@@ -32,9 +32,7 @@ export default function BookingForm({
   const [contactNumber, setContactNumber] = useState(initialData.contact_number || '');
   const [checkIn, setCheckIn] = useState(initialData.check_in || todayISO);
   const [checkOut, setCheckOut] = useState(initialData.check_out || tomorrowISO);
-  const [baseAmount, setBaseAmount] = useState(
-    initialData.base_amount != null ? initialData.base_amount.toString() : ''
-  );
+  const [baseAmount, setBaseAmount] = useState(initialData.base_amount != null ? initialData.base_amount.toString() : '');
   const [paidAmount, setPaidAmount] = useState(initialData.payment_received || 0);
   const [otherInfo, setOtherInfo] = useState(initialData.other_info || '');
 
@@ -58,9 +56,12 @@ export default function BookingForm({
     return new Array(initialData?.number_of_adults || 1).fill('');
   };
 
+  //Other states
   const [selectedRooms, setSelectedRooms] = useState<string[]>(initSelectedRooms());
-
+  const [availableRoomMap, setAvailableRoomMap] = useState<Record<string, number>>({});
   const [errors, setErrors] = useState<string[]>([]);
+
+  // Ref for booking name input to focus on open
   const bookingNameRef = useRef<HTMLInputElement>(null);
 
   // Reset form logic
@@ -78,12 +79,12 @@ export default function BookingForm({
     setErrors([]);
   };
 
-  // Focus on open
+  // Effect - Focus first input on open
   useEffect(() => {
     bookingNameRef.current?.focus();
   }, []);
 
-  // If number of adults changes, sync selectedRooms length
+  // Effect - If number of adults changes, sync selectedRooms length
   useEffect(() => {
     setSelectedRooms((prev) => {
       if (numAdults > prev.length) {
@@ -95,16 +96,57 @@ export default function BookingForm({
     });
   }, [numAdults]);
 
+// Effect - Check room availability whenever checkIn, checkOut or rooms change
+  useEffect(() => {
+    const fetchRoomAvailability = async () => {
+      if (!checkIn || !checkOut || !rooms.length) return;
+      const map: Record<string, number> = {};
+      for (const room of rooms) {
+        const count = await IsRoomAvailable(
+          room.room_id,
+          checkIn,
+          checkOut,
+          1, // Assuming 1 bed needed per adult
+          initialData.booking_id ?? null // Exclude current booking when editing, or null otherwise
+        );
+        map[room.room_id] = count;
+      }
+      setAvailableRoomMap(map);
+    };
+    fetchRoomAvailability();
+  }, [checkIn, checkOut, rooms, numAdults]);
+
+  // Helper function to calculate nights between check-in and check-out dates
   const getNights = (checkIn: string, checkOut: string) => {
     return differenceInDays(new Date(checkOut), new Date(checkIn));
   };
 
+  // Handle room change for each adult
+  // This function updates the selectedRooms state when a room is assigned to an adult
   const handleRoomChange = (index: number, roomId: string) => {
-    const updated = [...selectedRooms];
-    updated[index] = roomId;
-    setSelectedRooms(updated);
+  const updated = [...selectedRooms];
+  updated[index] = roomId;
+  setSelectedRooms(updated);
+};
+
+  // Helper function to get the number of guests assigned to a room
+  const getRoomGuestCount = (roomId: string) =>
+  selectedRooms.filter((r) => r === roomId).length;
+
+  // Check if a room is over-assigned
+  const isRoomOverAssigned = (roomId: string) => {
+    const assignedCount = getRoomGuestCount(roomId);
+    const availableCount = availableRoomMap[roomId] ?? 0;
+    return assignedCount > availableCount;
   };
 
+  // Validate and save booking
+  // This function checks all fields and prepares the booking payload
+  // If any validation fails, it sets the errors state
+  // If successful, it calls the onSave prop with the booking data
+  // If editing, it includes the booking_id in the payload
+  // If successful, it resets the form and calls onSuccess callback
+  // If any error occurs during save, it sets the errors state with the error message
   const handleSave = async () => {
     const newErrors: string[] = [];
 
@@ -115,8 +157,8 @@ export default function BookingForm({
     if (new Date(checkOut) <= new Date(checkIn)) newErrors.push('Check-out must be after check-in.');
     if (!baseAmount || isNaN(parseFloat(baseAmount)) || parseFloat(baseAmount) <= 0) newErrors.push('Base amount must be greater than 0.');
     if (paidAmount == null || paidAmount < 0) newErrors.push('Paid amount can not be less than 0.');
-    if (selectedRooms.some((roomId) => !roomId)) newErrors.push('All adults must be assigned a room.');
-
+    const allRoomsAssigned = selectedRooms.every((id) => id && id.trim() !== '');
+    if (!allRoomsAssigned) newErrors.push('All adults must be assigned a room.');
     if (newErrors.length > 0) {
       setErrors(newErrors);
       return;
@@ -279,23 +321,42 @@ export default function BookingForm({
           </div>
         </div>
         <div className="mt-4">
-          {selectedRooms.map((room, index) => (
-            <div key={index} className="mb-2">
-              <label className="block text-sm text-gray-600 mb-1">Room for Adult {index + 1}</label>
-              <select
-                value={room}
-                onChange={(e) => handleRoomChange(index, e.target.value)}
-                className={`w-full border border-gray-300 px-3 py-1.5 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 ${errors.some(e => e.toLowerCase().includes('assigned a room')) ? 'border-red-500' : ''}`}
-              >
-                <option value="">Select room</option>
-                {rooms.map((roomObj) => (
-                  <option key={roomObj.room_id} value={roomObj.room_id}>
-                    {roomObj.room_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
+          {selectedRooms.map((room, index) => {
+            const isInvalid = room && !availableRoomMap[room];
+            const isOverAssigned = room && isRoomOverAssigned(room);
+
+            return (
+              <div key={index} className="mb-2">
+                <label className="block text-sm text-gray-600 mb-1">Room for Adult {index + 1}</label>
+                <select
+                  value={room}
+                  onChange={(e) => handleRoomChange(index, e.target.value)}
+                  className={`w-full border px-3 py-1.5 rounded-md text-sm focus:outline-none focus:ring-1 
+                    ${isInvalid || isOverAssigned ? 'border-red-500 ring-red-500' : 'border-gray-300 focus:ring-blue-500'}
+                  `}
+                >
+                  <option value="">-- Select Room --</option>
+                  {rooms.map((roomObj) => (
+                    <option
+                      key={roomObj.room_id}
+                      value={roomObj.room_id}
+                      disabled={availableRoomMap[roomObj.room_id] === 0}
+                    >
+                      {roomObj.room_name}
+                      {availableRoomMap[roomObj.room_id] === 0 ? ' (Unavailable)' : ` (${availableRoomMap[roomObj.room_id]} beds available)`}
+                    </option>
+                  ))}
+                </select>
+
+                {isInvalid && (
+                  <p className="text-red-500 text-xs mt-1">This room is not available for the selected dates.</p>
+                )}
+                {isOverAssigned && (
+                  <p className="text-red-500 text-xs mt-1">Too many guests selected for this room.</p>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Errors */}

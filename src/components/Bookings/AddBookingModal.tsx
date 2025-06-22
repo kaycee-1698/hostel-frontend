@@ -2,7 +2,6 @@
 import { Booking } from '@/types';
 import Modal from '../Modal/Modal';
 import BookingForm from './BookingForm';
-import { useRooms } from '@/hooks/useRooms';
 import { useBookings } from '@/hooks/useBookings';
 
 export default function AddBookingModal({ 
@@ -13,7 +12,6 @@ export default function AddBookingModal({
     onClose: () => void;
     onSuccess?: () => void;
  }) {
-  const { rooms } = useRooms();
   const { addNewBooking} = useBookings();
 
   const handleSave = async (newBooking: Partial<Booking>) => {
@@ -21,15 +19,14 @@ export default function AddBookingModal({
       await addNewBooking(newBooking);
       onSuccess?.();
     } catch (err: any) {
-      console.error([err.message || 'Something went wrong']);
-      return;
+      throw new Error(err.message || 'Something went wrong');
     }
   }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Create Booking">
       <BookingForm 
-      rooms={rooms} onClose={onClose} onSave={handleSave} onSuccess={onSuccess} />
+      onClose={onClose} onSave={handleSave} onSuccess={onSuccess} />
     </Modal>
   );
 }
