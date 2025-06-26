@@ -2,20 +2,48 @@ import React from 'react';
 import { Booking } from '@/types';
 
 interface BookingRowProps {
+  index: number;
   booking: Booking;
-  onSave: (updatedBooking: Booking) => void;
-  onDelete: (id: number) => void;
-  onRowClick: () => void; // Add the callback to open the modal
+  isHovered: boolean;
+  isSelectMode: boolean;
+  isSelected: boolean;
+  onToggleSelect: () => void;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+  onRowClick: () => void;
 }
 
 export default function BookingRow({
+  index,
   booking,
-  onSave,
-  onDelete,
-  onRowClick
+  isHovered,
+  isSelectMode,
+  isSelected,
+  onToggleSelect,
+  onMouseEnter,
+  onMouseLeave,
+  onRowClick,
 }: BookingRowProps) {
   return (
-    <tr className="hover:bg-blue-50 transition cursor-pointer group" onClick={onRowClick}>
+    <tr
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onClick={onRowClick}
+      className="hover:bg-blue-50 transition cursor-pointer group"
+    >
+      <td className="px-4 py-2 w-10">
+        {(isSelectMode || isHovered) ? (
+          <input
+            type="checkbox"
+            className="h-5 w-5 cursor-pointer"
+            checked={isSelected}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => onToggleSelect()}
+          />
+        ) : (
+          <span>{index + 1}</span>
+        )}
+      </td>
       <td className="px-4 py-3">{booking.booking_name}</td>
       <td className="px-4 py-3">{booking.ota_name}</td>
       <td className="px-4 py-3">{booking.number_of_adults}</td>
@@ -26,14 +54,6 @@ export default function BookingRow({
       <td className="px-4 py-3 text-red-600 font-semibold">₹{booking.pending_amount}</td>
       <td className="px-4 py-3">{booking.payment_status}</td>
       <td className="px-4 py-3">{booking.bank}</td>
-      <td className="px-4 py-3 text-red-500 hover:text-red-700"
-        onClick={(e) => {
-          e.stopPropagation(); // prevent row click from opening modal
-          onDelete(booking.booking_id);
-        }}
-      >
-        <button className="text-sm font-medium">Delete</button>
-      </td>
   </tr>
   );
 }
