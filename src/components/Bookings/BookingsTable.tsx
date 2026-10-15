@@ -18,13 +18,14 @@ export default function BookingsTable({ bookings, onDelete}: BookingsTableProps)
   const [showConfirm, setShowConfirm] = useState(false);
 
   const isSelectMode = selectedIds.length > 0;
-  const allSelected = selectedIds.length === localBookings.length;
+  const allSelected = localBookings.length > 0 && selectedIds.length === localBookings.length;
   
   const { getBedsAndRoomsForBooking } = useBookings();
 
   // Update localBookings whenever the bookings prop changes
   useEffect(() => {
     setLocalBookings(bookings);
+    setSelectedIds((current) => current.filter((id) => bookings.some((booking) => booking.booking_id === id)));
   }, [bookings]);
 
   const handleSaveBooking = async (savedBooking: Booking) => {
@@ -157,7 +158,11 @@ export default function BookingsTable({ bookings, onDelete}: BookingsTableProps)
             </tr>
           </thead>
           <tbody className="text-sm divide-y divide-gray-100">
-            {localBookings.map((booking, index) => (
+            {localBookings.length === 0 ? (
+              <tr>
+                <td colSpan={11} className="px-4 py-8 text-center text-gray-500">No bookings match these filters.</td>
+              </tr>
+            ) : localBookings.map((booking, index) => (
                 <BookingRow
                   key={booking.booking_id}
                   index={index}
@@ -170,7 +175,7 @@ export default function BookingsTable({ bookings, onDelete}: BookingsTableProps)
                   onMouseLeave={() => setHoveredRow(null)}
                   onRowClick={() => handleBookingClick(booking.booking_id)}
                 />
-              ))}    
+              ))}
           </tbody>
         </table>
       </div>

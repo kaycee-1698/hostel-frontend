@@ -10,7 +10,10 @@ export async function createGuest(guest: any) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(guest),
   });
-  return await res.json();
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(data?.message || data?.error || 'Guest check-in failed. Please try again.');
+  if (!data?.guest?.guest_id) throw new Error('The server did not confirm that the guest was saved.');
+  return data;
 }
 
 export async function getAllGuests() {
@@ -119,11 +122,18 @@ export async function updateBooking(id: number, editedBooking: any, requiresReas
 
   //file upload functions
 
-  export async function uploadFile(file: File): Promise<string> {
-    // Here, implement the upload logic (e.g., using Supabase Storage, Firebase, AWS S3)
-    // For the sake of this example, let's assume it returns a URL after upload
-    const storageURL = 'https://your-storage-service-url.com/uploaded-file-path';
-    return storageURL;
+  // Files are read locally; the check-in request uploads them on submission.
+  export async function readGuestImage(file: File): Promise<string> {
+    if (!['image/jpeg', 'image/png'].includes(file.type)) throw new Error('Choose a JPEG or PNG image.');
+    if (!file.size || file.size > 5 * 1024 * 1024) throw new Error('Each image must be between 1 byte and 5 MB.');
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => typeof reader.result === 'string'
+        ? resolve(reader.result) : reject(new Error('Could not read the image.'));
+      reader.onerror = () => reject(new Error('Could not read the image.'));
+      reader.onabort = () => reject(new Error('Image reading was cancelled.'));
+      reader.readAsDataURL(file);
+    });
   }
 
   //room api functions

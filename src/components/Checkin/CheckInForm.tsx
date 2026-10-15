@@ -2,10 +2,17 @@
 import React, { useState, useRef } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import { Guest, Booking } from '@/types';
-import { createGuest, uploadFile } from '@/lib/api';
+import { createGuest, readGuestImage } from '@/lib/api';
 
 export default function CheckInForm({ booking }: { booking: Booking }) {
-    const [form, setForm] = useState<Partial<Guest>>({});
+  const [form, setForm] = useState<Partial<Guest>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState(0);
+  const [error, setError] = useState('');
+  const submitting = useRef(false);
+  const readingFiles = useRef(0);
+  const failedFiles = useRef(new Set<string>());
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -29,30 +36,46 @@ export default function CheckInForm({ booking }: { booking: Booking }) {
   };
   
 
-  const handleFileUpload = async (file: File, name: string) => {
-    if (file) {
-      try {
-        const fileURL = await uploadFile(file);
-        setForm((prev) => ({
-          ...prev,
-          [name]: fileURL, // Store the URL of the uploaded file
-        }));
-      } catch (error) {
-        console.error('File upload failed:', error);
-        alert('Failed to upload file');
-      }
+  const handleFileUpload = async (file: File | undefined, name: 'id_front' | 'id_back') => {
+    failedFiles.current.delete(name);
+    setForm((prev) => ({ ...prev, [name]: undefined }));
+    if (!file) return;
+    readingFiles.current++;
+    setPendingFiles(readingFiles.current);
+    setError('');
+    try {
+      const image = await readGuestImage(file);
+      setForm((prev) => ({ ...prev, [name]: image }));
+    } catch (error) {
+      failedFiles.current.add(name);
+      setError(error instanceof Error ? error.message : 'Could not read the image.');
+    } finally {
+      readingFiles.current--;
+      setPendingFiles(readingFiles.current);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (submitting.current || readingFiles.current || isComplete) return;
+    if (failedFiles.current.size) {
+      setError('Replace or clear the invalid image before submitting.');
+      return;
+    }
+    submitting.current = true;
+    setIsSubmitting(true);
+    setError('');
     try {
-      await createGuest(form);
-      console.log('Guest created:', form);
-      alert('Guest checked in successfully!');
+      // Capture the current canvas so later edits and clearing are respected.
+      const signature = sigCanvas.current && !sigCanvas.current.isEmpty()
+        ? sigCanvas.current.toDataURL('image/png') : undefined;
+      await createGuest({ ...form, signature, booking_id: booking.booking_id });
+      setIsComplete(true);
     } catch (error) {
-      console.error(error);
-      alert('Error submitting form');
+      setError(error instanceof Error ? error.message : 'Guest check-in failed.');
+    } finally {
+      submitting.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -60,6 +83,7 @@ export default function CheckInForm({ booking }: { booking: Booking }) {
 
   const clearSignature = () => {
     sigCanvas.current?.clear();
+    setForm((prev) => ({ ...prev, signature: undefined }));
   };
 
   const saveSignature = (name: string) => {
@@ -68,7 +92,7 @@ export default function CheckInForm({ booking }: { booking: Booking }) {
       return;
     }
     const dataURL = sigCanvas.current?.toDataURL(); // You can upload or store this
-    console.log("Signature Data URL:", dataURL);
+
     setForm((prev) => ({
         ...prev,
         [name]: dataURL, // Store the URL of the uploaded file
@@ -76,8 +100,12 @@ export default function CheckInForm({ booking }: { booking: Booking }) {
     // Save it to form state if needed
   };
 
+  if (isComplete) return <p role="status" className="p-6 text-green-700">Guest checked in successfully!</p>;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-white rounded-lg shadow-md max-w-2xl mx-auto">
+  {error && <p role="alert" className="text-red-600">{error}</p>}
+  <fieldset disabled={isSubmitting || pendingFiles > 0} className="space-y-6">
   {/* Booking Details Summary */}
   <div className="bg-gray-100 p-4 rounded-md">
     <p><strong>Check-in:</strong> {booking.check_in}</p>
@@ -135,7 +163,7 @@ export default function CheckInForm({ booking }: { booking: Booking }) {
         accept="image/jpeg, image/png"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) handleFileUpload(file, 'id_front');
+          void handleFileUpload(file, 'id_front');
         }}
         className="input"
       />
@@ -148,7 +176,7 @@ export default function CheckInForm({ booking }: { booking: Booking }) {
         accept="image/jpeg, image/png"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) handleFileUpload(file, 'id_back');
+          void handleFileUpload(file, 'id_back');
         }}
         className="input"
       />
@@ -185,11 +213,11 @@ export default function CheckInForm({ booking }: { booking: Booking }) {
 
   {/* Submit */}
   <button type="submit" className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded w-full">
-    Submit
+    {isSubmitting ? 'Saving…' : pendingFiles > 0 ? 'Reading images…' : 'Submit'}
   </button>
+  </fieldset>
 </form>
 
   );
 
 };
-

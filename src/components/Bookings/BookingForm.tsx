@@ -28,7 +28,9 @@ export default function BookingForm({
   // States initialized from initialData or defaults
   const [bookingName, setBookingName] = useState(initialData.booking_name || '');
   const [otaName, setOtaName] = useState(initialData.ota_name || 'Direct');
-  const [numAdults, setNumAdults] = useState(initialData.number_of_adults || 1);
+  const initialAdults = Number.isInteger(initialData.number_of_adults) && initialData.number_of_adults! > 0 && initialData.number_of_adults! <= 1000
+    ? initialData.number_of_adults! : 1;
+  const [numAdults, setNumAdults] = useState(initialAdults);
   const [contactNumber, setContactNumber] = useState(initialData.contact_number || '');
   const [checkIn, setCheckIn] = useState(initialData.check_in || todayISO);
   const [checkOut, setCheckOut] = useState(initialData.check_out || tomorrowISO);
@@ -44,20 +46,20 @@ export default function BookingForm({
     ) {
       const arr: string[] = [];
       for (const [roomId, count] of Object.entries(initialData.guests_per_room)) {
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < Math.min(count, initialAdults); i++) {
           arr.push(roomId);
         }
       }
       if (arr.length !== initialData.number_of_adults) {
-        return new Array(initialData.number_of_adults).fill('');
+        return new Array(initialAdults).fill('');
       }
       return arr;
     }
-    return new Array(initialData?.number_of_adults || 1).fill('');
+    return new Array(initialAdults).fill('');
   };
 
   //Other states
-  const [selectedRooms, setSelectedRooms] = useState<string[]>(initSelectedRooms());
+  const [selectedRooms, setSelectedRooms] = useState<string[]>(initSelectedRooms);
   const [availableRoomMap, setAvailableRoomMap] = useState<Record<string, number>>({});
   const [errors, setErrors] = useState<string[]>([]);
 
@@ -75,7 +77,7 @@ export default function BookingForm({
     setBaseAmount('');
     setPaidAmount(0);
     setOtherInfo('');
-    setSelectedRooms(new Array(numAdults).fill(''));
+    setSelectedRooms(['']);
     setErrors([]);
   };
 
@@ -151,7 +153,7 @@ export default function BookingForm({
     const newErrors: string[] = [];
 
     if (!bookingName.trim()) newErrors.push('Booking name is required.');
-    if (!numAdults || numAdults < 1) newErrors.push('At least one adult must be added.');
+    if (!Number.isSafeInteger(numAdults) || numAdults < 1) newErrors.push('At least one adult must be added.');
     if (!checkIn) newErrors.push('Check-in date is required.');
     if (!checkOut) newErrors.push('Check-out date is required.');
     if (new Date(checkOut) <= new Date(checkIn)) newErrors.push('Check-out must be after check-in.');
@@ -159,6 +161,7 @@ export default function BookingForm({
     if (paidAmount == null || paidAmount < 0) newErrors.push('Paid amount can not be less than 0.');
     const allRoomsAssigned = selectedRooms.every((id) => id && id.trim() !== '');
     if (!allRoomsAssigned) newErrors.push('All adults must be assigned a room.');
+    if (selectedRooms.some((room) => isRoomOverAssigned(room))) newErrors.push('Not enough available beds in the selected rooms.');
     if (newErrors.length > 0) {
       setErrors(newErrors);
       return;
@@ -232,12 +235,18 @@ export default function BookingForm({
             <input
               type="number"
               min={1}
+              max={1000}
+              step={1}
               className={`w-full border border-gray-300 px-3 py-1.5 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 ${errors.some(e => e.toLowerCase().includes('one adult')) ? 'border-red-500' : ''}`}
               value={numAdults}
               onChange={(e) => {
                 const value = Number(e.target.value)
-                setNumAdults(value)
-                setSelectedRooms(new Array(value).fill(''))
+                if (!Number.isSafeInteger(value) || value < 1 || value > 1000) {
+                  setErrors(['Number of adults must be a whole number between 1 and 1000.']);
+                  return;
+                }
+                setErrors([]);
+                setNumAdults(value);
               }}
             />
           </div>
@@ -275,7 +284,7 @@ export default function BookingForm({
                 type="date"
                 className={`w-full border border-gray-300 px-3 py-1.5 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 ${errors.some(e => e.toLowerCase().includes('check-out')) ? 'border-red-500' : ''}`}
                 value={checkOut}
-                min={formatISO(addDays(new Date(checkIn), 1), { representation: 'date' })}
+                min={checkIn && !Number.isNaN(new Date(checkIn).getTime()) ? formatISO(addDays(new Date(checkIn), 1), { representation: 'date' }) : undefined}
                 onChange={(e) => setCheckOut(e.target.value)}
               />
             </div>
