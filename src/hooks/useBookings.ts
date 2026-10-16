@@ -5,9 +5,15 @@ import { Booking } from '@/types';
 export function useBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
 
   const fetchBookings = async () => {
+    setIsLoading(true);
+    setFetchError('');
+    try {
     const data = await getAllBookings();
+    if (!Array.isArray(data.bookings)) throw new Error(data.error || data.message || 'Could not load bookings.');
     const sorted = data.bookings.sort((a: Booking, b:Booking) => {
       const dateA = new Date(a.check_in);
       const dateB = new Date(b.check_in);
@@ -20,6 +26,12 @@ export function useBookings() {
       return a.booking_name.toLowerCase().localeCompare(b.booking_name.toLowerCase());
     });
     setBookings(sorted);
+    } catch (error) {
+      setFetchError(error instanceof Error ? error.message : 'Could not load bookings.');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
 
@@ -66,12 +78,14 @@ export function useBookings() {
   };
 
   useEffect(() => {
-    fetchBookings();
+    void fetchBookings().catch(() => {});
   }, []);
 
   return {
     bookings,
     loadingId,
+    isLoading,
+    fetchError,
     fetchBookings,
     removeBooking,
     updateSingleBooking,

@@ -110,7 +110,7 @@ test('adult field rejects negative and decimal counts without creating invalid a
   const h = harness('components/Bookings/BookingForm.tsx', {
     'date-fns': require('date-fns'), '@/hooks/useRooms': { useRooms: () => ({ rooms: [] }) },
   });
-  for (const value of ['-1', '1.5', '', '10000000000']) {
+  for (const value of ['-1', '1.5', '10000000000']) {
     const form = h.render({ onSave() {}, onClose() {} });
     const input = find(form, node => node.type === 'input' && node.props.max === 1000);
     assert.doesNotThrow(() => input.props.onChange({ target: { value } }));
@@ -148,4 +148,45 @@ test('clearing the booking check-in date does not crash rendering', () => {
   const input = find(form, node => node.type === 'input' && node.props.type === 'date');
   input.props.onChange({ target: { value: '' } });
   assert.doesNotThrow(() => h.render(props));
+});
+
+test('booking save blocks rapid repeated clicks and calls success once', async () => {
+  let calls = 0, successes = 0, savedCloses = 0, resolve;
+  const pending = new Promise(done => { resolve = done; });
+  const h = harness('components/Bookings/BookingForm.tsx', {
+    'date-fns': require('date-fns'), '@/hooks/useRooms': { useRooms: () => ({ rooms: [] }) },
+  });
+  const props = { initialData: { preferred_bed_id: 7, booking_name: 'Test', number_of_adults: 1, base_amount: 100,
+    check_in: '2026-10-20', check_out: '2026-10-21', guests_per_room: {1:1} },
+    onSave: async payload => { assert.equal(payload.preferred_bed_id,undefined); calls++; await pending; }, onSuccess: () => { successes++; }, onSaved() { savedCloses++; }, onClose() { throw Error("Save invoked cancel handler"); } };
+  h.render(props);
+  h.state[10] = {1:2}; // Availability normally supplied by the room API effect.
+  const save = find(h.render(props), n => n.type === 'button' && n.props.children === 'Save');
+  const first = save.props.onClick();
+  await save.props.onClick();
+  assert.equal(calls,1);
+  assert.equal(find(h.render(props), n => n.props?.['aria-busy'] === true).props.disabled,true);
+  resolve(); await first;
+  await save.props.onClick();
+  assert.equal(calls,1); assert.equal(successes,1); assert.equal(savedCloses,1);
+});
+
+test('deletion displays backend explanation', async () => {
+  const api = load('lib/api.ts', {}, {fetch: async () => ({ok:false,json:async () => ({error:'This booking has guest check-in records and cannot be deleted.'})})});
+  await assert.rejects(api.deleteBooking(117), /guest check-in records/);
+});
+
+test('adult count can be cleared and retyped, but cannot be saved blank', async () => {
+  let saves=0;
+  const h=harness('components/Bookings/BookingForm.tsx', {
+    'date-fns':require('date-fns'), '@/hooks/useRooms':{useRooms:()=>({rooms:[]})},
+  });
+  const props={onSave(){saves++;},onClose(){}};
+  const input=()=>find(h.render(props),n=>n.type==='input' && n.props.max===1000);
+  input().props.onChange({target:{value:''}});
+  assert.equal(input().props.value,'');
+  await find(h.render(props),n=>n.type==='button' && n.props.children==='Save').props.onClick();
+  assert.equal(saves,0);
+  input().props.onChange({target:{value:'3'}});
+  assert.equal(input().props.value,3);
 });

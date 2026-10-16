@@ -37,6 +37,8 @@ export interface Booking {
   payment_status: string;
   bank: string;
   other_info: string;
+  preferred_bed_id?: number;
+  create_request_id?: string;
   guests_per_room?: Record<string, number>;
   rooms?: BookingRoom[];
 }  
@@ -58,8 +60,11 @@ export interface Bed {
 export type CalendarBookings = {
   [bedId: number]: {
     [date: string]: {
+      booking_bed_id: number;
       booking_id: number;
       booking_name: string;
+      check_in: string;
+      check_out: string;
     };
   };
 };
@@ -79,3 +84,5 @@ export interface BookingBed {
   check_in: string;
   check_out: string;
 }
+export type CalendarData = { calendarBookings: CalendarBookings };
+export type CalendarAssignment = CalendarBookings[number][string];

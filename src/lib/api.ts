@@ -64,9 +64,8 @@ export async function deleteBooking(id: number) {
     });
   
     if (!res.ok) {
-      const errorText = await res.text();
-      console.error(`Failed to delete booking ${id}:`, errorText);
-      throw new Error('Failed to delete booking');
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.error || 'Failed to delete booking. Please try again.');
     }
   
     return res.json();
@@ -103,14 +102,18 @@ export async function updateBooking(id: number, editedBooking: any, requiresReas
     
   }
 
-  export async function getBookingsByBedAndDateRange (startDate: string, endDate: string): Promise<CalendarBookings>  {
+  export async function getBookingsByBedAndDateRange (startDate: string, endDate: string): Promise<import("@/types").CalendarData>  {
     const res = await fetch(`${BASE_URL}/bookings/calendar?startDate=${startDate}&endDate=${endDate}`);
     if (!res.ok) {
       const errorText = await res.text();
       console.error(`Failed to fetch bookings by bed and date range:`, errorText);
       throw new Error('Failed to fetch bookings by bed and date range');
     }
-    return res.json();
+    const data = await res.json();
+    if (!data.calendarBookings) {
+      throw new Error('Calendar data is outdated. Restart the updated backend.');
+    }
+    return data;
   }
 
   export const getBookingWithBedsAndRooms = async (id: number) => {
@@ -238,3 +241,16 @@ export async function updateBooking(id: number, editedBooking: any, requiresReas
   }
 
 
+
+export async function moveCalendarAssignment(id: number, move: {
+  bed_id: number; check_in: string; expected_bed_id: number;
+  expected_check_in: string; expected_check_out: string;
+  swap_assignment_id?: number; swap_check_in?: string; swap_check_out?: string; confirm_swap?: boolean;
+}) {
+  const response = await fetch(`${BASE_URL}/booking-beds/${id}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(move),
+  });
+  const body = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(body?.error || 'Could not move the assignment. Refresh and try again.');
+  return body;
+}

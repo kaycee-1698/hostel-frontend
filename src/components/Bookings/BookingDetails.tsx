@@ -68,11 +68,13 @@ export default function BookingDetails({
           </div>
           <div className="mb-6">
             <div className="text-lg font-semibold mb-2">Assigned Rooms & Beds</div>
-            <div className="overflow-hidden rounded-xl border border-gray-200">
-              <div className="grid grid-cols-3 bg-gray-100 text-sm font-medium text-gray-700 px-4 py-2">
+            <div className="overflow-x-auto rounded-xl border border-gray-200">
+              <div className="grid min-w-[560px] grid-cols-5 bg-gray-100 text-sm font-medium text-gray-700 px-4 py-2">
                 <div><strong>Adult</strong></div>
                 <div><strong>Room</strong></div>
                 <div><strong>Bed</strong></div>
+                <div><strong>Check-in</strong></div>
+                <div><strong>Check-out</strong></div>
               </div>
               {booking.rooms
                 ?.flatMap((room) =>
@@ -84,11 +86,13 @@ export default function BookingDetails({
                 .map(({ bed, room_name }, i) => (
                   <div
                     key={bed.booking_bed_id}
-                    className="grid grid-cols-3 items-center text-sm px-4 py-2 even:bg-gray-50 hover:bg-gray-100 transition"
+                    className="grid min-w-[560px] grid-cols-5 items-center text-sm px-4 py-2 even:bg-gray-50 hover:bg-gray-100 transition"
                   >
                     <div className="text-gray-800">Adult {i + 1}</div>
                     <div className="text-gray-600">{room_name}</div>
                     <div className="text-gray-600">{bed.bed_name}</div>
+                    <div className="text-gray-600">{bed.check_in || booking.check_in}</div>
+                    <div className="text-gray-600">{bed.check_out || booking.check_out}</div>
                   </div>
                 ))}
             </div>

@@ -11,11 +11,13 @@ export default function BookingForm({
   initialData = {},
   onSave,
   onClose,
+  onSaved,
   onSuccess, }: { 
     initialData?: Partial<Booking>; // to prefill for edit mode
     onSave: (bookingData: Partial<Booking>) => Promise<void>;
     onClose: () => void;
-    onSuccess?: () => void;
+    onSaved?: () => void;
+    onSuccess?: () => void | Promise<void>;
  }) {
 
   // Custom hook to fetch rooms and check availability
@@ -61,7 +63,14 @@ export default function BookingForm({
   //Other states
   const [selectedRooms, setSelectedRooms] = useState<string[]>(initSelectedRooms);
   const [availableRoomMap, setAvailableRoomMap] = useState<Record<string, number>>({});
+  const saveInFlight = useRef(false);
+  const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+
+  // Keep the last valid count while the user clears and retypes the field.
+  const [adultsBlank, setAdultsBlank] = useState(false);
 
   // Ref for booking name input to focus on open
   const bookingNameRef = useRef<HTMLInputElement>(null);
@@ -71,13 +80,14 @@ export default function BookingForm({
     setBookingName('');
     setOtaName('Direct');
     setNumAdults(1);
+    setAdultsBlank(false);
     setContactNumber('');
     setCheckIn(todayISO);
     setCheckOut(tomorrowISO);
     setBaseAmount('');
     setPaidAmount(0);
     setOtherInfo('');
-    setSelectedRooms(['']);
+    setSelectedRooms(initialData.guests_per_room ? initSelectedRooms() : ['']);
     setErrors([]);
   };
 
@@ -100,8 +110,11 @@ export default function BookingForm({
 
 // Effect - Check room availability whenever checkIn, checkOut or rooms change
   useEffect(() => {
+    let active = true;
     const fetchRoomAvailability = async () => {
       if (!checkIn || !checkOut || !rooms.length) return;
+      setAvailabilityLoading(true);
+      try {
       const map: Record<string, number> = {};
       for (const room of rooms) {
         const count = await IsRoomAvailable(
@@ -111,11 +124,15 @@ export default function BookingForm({
           1, // Assuming 1 bed needed per adult
           initialData.booking_id ?? null // Exclude current booking when editing, or null otherwise
         );
-        map[room.room_id] = count;
+        map[room.room_id] = Math.max(0, Number(count) || 0);
       }
-      setAvailableRoomMap(map);
+      if (active) setAvailableRoomMap(map);
+      } catch {
+        if (active) { setAvailableRoomMap({}); setErrors(['Could not check room availability. Please reopen the form and try again.']); }
+      } finally { if (active) setAvailabilityLoading(false); }
     };
-    fetchRoomAvailability();
+    void fetchRoomAvailability();
+    return () => { active = false; };
   }, [checkIn, checkOut, rooms, numAdults]);
 
   // Helper function to calculate nights between check-in and check-out dates
@@ -150,10 +167,11 @@ export default function BookingForm({
   // If successful, it resets the form and calls onSuccess callback
   // If any error occurs during save, it sets the errors state with the error message
   const handleSave = async () => {
+    if (saveInFlight.current || availabilityLoading) return;
     const newErrors: string[] = [];
 
     if (!bookingName.trim()) newErrors.push('Booking name is required.');
-    if (!Number.isSafeInteger(numAdults) || numAdults < 1) newErrors.push('At least one adult must be added.');
+    if (adultsBlank || !Number.isSafeInteger(numAdults) || numAdults < 1) newErrors.push('At least one adult must be added.');
     if (!checkIn) newErrors.push('Check-in date is required.');
     if (!checkOut) newErrors.push('Check-out date is required.');
     if (new Date(checkOut) <= new Date(checkIn)) newErrors.push('Check-out must be after check-in.');
@@ -190,16 +208,25 @@ export default function BookingForm({
       bookingPayload.booking_id = initialData.booking_id;
     }
 
+    saveInFlight.current = true;
+    setSaving(true);
     try {
       setErrors([]);
       await onSave(bookingPayload);
-      onSuccess?.();
     } catch (err: any) {
       setErrors([err.message || 'Something went wrong']);
+      saveInFlight.current = false;
+      setSaving(false);
       return;
     }
 
-    resetForm();
+    // Saving succeeded: never offer a second submission if refreshing fails.
+    try {
+      await onSuccess?.();
+      (onSaved ?? onClose)();
+    } catch {
+      setErrors(['Booking saved. Close this window and refresh to see it. Do not save again.']);
+    }
   };
 
   return (
@@ -238,14 +265,20 @@ export default function BookingForm({
               max={1000}
               step={1}
               className={`w-full border border-gray-300 px-3 py-1.5 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 ${errors.some(e => e.toLowerCase().includes('one adult')) ? 'border-red-500' : ''}`}
-              value={numAdults}
+              value={adultsBlank ? '' : numAdults}
               onChange={(e) => {
+                if (e.target.value === '') {
+                  setAdultsBlank(true);
+                  setErrors([]);
+                  return;
+                }
                 const value = Number(e.target.value)
                 if (!Number.isSafeInteger(value) || value < 1 || value > 1000) {
                   setErrors(['Number of adults must be a whole number between 1 and 1000.']);
                   return;
                 }
                 setErrors([]);
+                setAdultsBlank(false);
                 setNumAdults(value);
               }}
             />
@@ -352,15 +385,15 @@ export default function BookingForm({
                       disabled={availableRoomMap[roomObj.room_id] === 0}
                     >
                       {roomObj.room_name}
-                      {availableRoomMap[roomObj.room_id] === 0 ? ' (Unavailable)' : ` (${availableRoomMap[roomObj.room_id]} beds available)`}
+                      {` (${availableRoomMap[roomObj.room_id] ?? 0} beds available)`}
                     </option>
                   ))}
                 </select>
 
-                {isInvalid && (
+                {!availabilityLoading && isInvalid && (
                   <p className="text-red-500 text-xs mt-1">This room is not available for the selected dates.</p>
                 )}
-                {isOverAssigned && (
+                {!availabilityLoading && isOverAssigned && (
                   <p className="text-red-500 text-xs mt-1">Too many guests selected for this room.</p>
                 )}
               </div>
@@ -368,6 +401,9 @@ export default function BookingForm({
           })}
         </div>
 
+        {availabilityLoading && <p role="status" className="mt-3 text-sm text-slate-500">Checking room availability…</p>}
+        {initialData.booking_id && (checkIn !== initialData.check_in || checkOut !== initialData.check_out || numAdults !== initialData.number_of_adults || JSON.stringify(selectedRooms) !== JSON.stringify(initSelectedRooms())) &&
+          <p role="note" className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">These date, guest or room changes apply to the entire booking. All beds will share the new dates. Existing beds are kept where available; unavailable beds may be replaced within the selected rooms.</p>}
         {/* Errors */}
         {errors.length > 0 && (
           <div className="mt-4 text-red-600 text-sm space-y-1">
@@ -380,6 +416,7 @@ export default function BookingForm({
         {/* Buttons */}
         <div className="mt-6 flex justify-between items-center">
           <button
+            disabled={saving}
             onClick={resetForm}
             className="px-4 py-1.5 text-sm rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200"
           >
@@ -388,6 +425,7 @@ export default function BookingForm({
 
           <div className="flex gap-3">
             <button
+              disabled={saving}
               onClick={() => {
                 resetForm()
                 onClose()
@@ -397,10 +435,12 @@ export default function BookingForm({
               Cancel
             </button>
             <button
+              disabled={saving || availabilityLoading}
+              aria-busy={saving}
               onClick={handleSave}
               className="px-4 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700"
             >
-              Save
+              {saving ? 'Saving…' : 'Save'}
             </button>
           </div>
         </div>

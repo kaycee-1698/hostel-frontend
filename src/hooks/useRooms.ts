@@ -3,12 +3,19 @@ import { getAllRooms, getRoomById, createRoom, updateRoom, deleteRoom, updateRoo
 import { Room, Bed } from '@/types';
 
 export function useRooms() {
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [rooms, setRooms] = useState<Room[]>([]);
     const [beds, setBeds] = useState<Bed[]>([]);
 
     const fetchRooms = async () => {
-        const data = await getAllRooms();
-        setRooms(data.rooms);
+        setLoading(true); setError(null);
+        try {
+          const data = await getAllRooms();
+          if (!Array.isArray(data.rooms)) throw new Error('Invalid rooms response');
+          setRooms(data.rooms);
+        } catch { setError('Could not load rooms. Please try again.'); }
+        finally { setLoading(false); }
       };
 
     const addRoom = async (room: Partial<Room>) => {
@@ -88,6 +95,7 @@ export function useRooms() {
         
     return {
         rooms,
+        loading, error, fetchRooms,
         beds,
         addRoom,
         removeRoom,

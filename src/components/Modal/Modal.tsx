@@ -31,7 +31,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
       <div 
       className="fixed inset-0 flex items-center justify-center bg-black/60 z-50"
       onClick={onClose}
-      aria-hidden="true" >
+      >
 
         {/* Modal container */}
         <div 
