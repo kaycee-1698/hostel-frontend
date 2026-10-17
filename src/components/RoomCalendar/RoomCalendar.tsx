@@ -1,4 +1,6 @@
 'use client';
+import {useUnsavedRates} from '@/hooks/useUnsavedRates';
+import {useRoomRates,formatRate,rateKey,validRate} from '@/hooks/useRoomRates';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRooms } from '@/hooks/useRooms';
 import { useBookings } from '@/hooks/useBookings';
@@ -51,6 +53,22 @@ export default function RoomCalendar() {
     const timer = setTimeout(() => { setMoveMessage(''); setUndoMove(null); }, undoMove ? 10000 : 5000);
     return () => clearTimeout(timer);
   }, [moveMessage, undoMove, moving, drag, pendingSwap, noticePaused]);
+  const {rates,ready:ratesReady,error:rateError,saveRates} = useRoomRates(format(range.start,'yyyy-MM-dd'),format(range.end,'yyyy-MM-dd'));
+  const [rateDraft,setRateDraft] = useState<Record<string,string|null>>({});
+  const [rateSaving,setRateSaving]=useState(false);
+  const [rateNotice,setRateNotice] = useState('');
+  const [rateSaveError,setRateSaveError] = useState('');
+  const [rateSavedVersion,setRateSavedVersion] = useState(0);
+  useEffect(()=>{if(!rateNotice)return;const timer=setTimeout(()=>setRateNotice(''),5000);return()=>clearTimeout(timer);},[rateNotice,rateSavedVersion]);
+  const dirtyRates=Object.keys(rateDraft).length;
+  useUnsavedRates(dirtyRates>0);
+  const saveCalendarRates=async()=>{
+    if(rateSaving)return;
+    setRateNotice('');setRateSaveError('');
+    if(Object.values(rateDraft).some(value=>value!==null&&!validRate(value))){setRateSaveError('Enter valid rates between ₹0 and ₹10,00,000, with up to two decimal places.');return;}
+    setRateSaving(true);
+    try{await saveRates(Object.fromEntries(Object.entries(rateDraft).map(([key,value])=>[key,value===null?null:Number(value)])));setRateDraft({});setRateNotice('Rates saved successfully.');setRateSavedVersion(prev=>prev+1);}catch(error){setRateSaveError(error instanceof Error?error.message:'Could not save rates.');}finally{setRateSaving(false);}
+  };
   const dates = useMemo(() => eachDayOfInterval(range), [range]);
   const visibleRooms = rooms;
   const targetRoom = target ? rooms.find(room => room.beds.some(bed => bed.bed_id === target.bedId)) : undefined;
@@ -127,7 +145,7 @@ export default function RoomCalendar() {
   });
   return <div className="min-w-0 p-2 sm:p-4 text-slate-900">
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <div><h1 className="text-xl font-semibold">Room calendar</h1><p className="text-sm text-slate-500">Drag vertically to change beds. Change dates for the whole booking through Edit Booking.</p></div>
+      <div><h1 className="text-xl font-semibold">Room calendar</h1></div>
       <button disabled={moving} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white" onClick={() => setDraft({data:{}})}>+ Add booking</button>
     </div>
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -138,6 +156,13 @@ export default function RoomCalendar() {
         <button className={control} disabled={busy || moving} onClick={() => { cancelMove(); void refresh(); }}>Refresh</button>
       </div>
     </div>
+    {!!dirtyRates && <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+      <div className="flex flex-wrap gap-2">
+        {!!dirtyRates && <><span className="self-center">{dirtyRates} unsaved change{dirtyRates===1?'':'s'}</span><button className={control} disabled={rateSaving} onClick={()=>{setRateDraft({});setRateNotice('');}}>Discard</button><button className="rounded-lg bg-indigo-600 px-4 py-2 text-white" disabled={rateSaving} onClick={saveCalendarRates}>{rateSaving?'Saving…':'Save rates'}</button></>}
+      </div>
+    </div>}
+    {(rateError||rateSaveError) && <p role="alert" className="mb-3 text-sm text-red-700">{rateError||rateSaveError}</p>}
+    {rateNotice && <p role="status" className="mb-3 text-sm text-emerald-700">{rateNotice}</p>}
     {drag && <div role="status" className="fixed bottom-4 left-4 right-4 z-50 shadow-lg flex items-center justify-between gap-2 rounded-lg bg-indigo-50 p-3 text-sm text-indigo-900">
       <span>Moving {drag.assignment.booking_name} · {movedStay(drag.assignment, drag.assignment.check_in).nights} night{movedStay(drag.assignment, drag.assignment.check_in).nights === 1 ? '' : 's'}
         {target ? ` · ${targetRoom?.room_name} / ${targetBed?.bed_name} · ${format(parseISO(drag.assignment.check_in), 'dd MMM')} → ${format(parseISO(drag.assignment.check_out), 'dd MMM')}${target.day !== (drag.grabbedDay ?? drag.assignment.check_in) ? ' · Keep the same date column' : bedSwapCandidate(calendarBookings,drag,target.bedId).assignment ? ' · Exchange requires confirmation' : ''}` : ' · Choose another bed in the same date column'}
@@ -167,7 +192,10 @@ export default function RoomCalendar() {
             return <div key={room.room_id}>
               <div className="grid border-b border-slate-200 bg-slate-100" style={grid}>
                 <button disabled={moving} aria-expanded={expanded} className="sticky left-0 z-20 bg-slate-100 px-3 py-2 text-left text-sm font-semibold" onClick={() => setExpandedRooms(prev => ({...prev,[room.room_id]:!(prev[room.room_id] ?? true)}))}>{expanded ? '▾' : '▸'} {room.room_name}</button>
-                {dates.map(date => <div key={date.toISOString()} className="p-2 text-center text-xs text-slate-600">{!expanded && `${freeBeds([room],calendarBookings,date)} available`}</div>)}
+                {dates.map(date => <div key={date.toISOString()} className="p-2 text-center text-xs text-slate-600"><input type="text" inputMode="decimal" disabled={moving||!ratesReady||rateSaving} aria-label={`Nightly rate for ${room.room_name} on ${format(date,'yyyy-MM-dd')}`} placeholder="Set rate"
+                  className={`w-full min-w-0 cursor-text rounded border px-1 py-1 text-center font-medium text-indigo-700 border-transparent bg-transparent hover:border-indigo-300 focus:bg-white`}
+                  value={rateDraft[rateKey(room.room_id,format(date,'yyyy-MM-dd'))] === null ? (rates[room.room_id] ?? '') : rateDraft[rateKey(room.room_id,format(date,'yyyy-MM-dd'))] ?? (rates[rateKey(room.room_id,format(date,'yyyy-MM-dd'))] ?? rates[room.room_id] ?? '')}
+                  onFocus={event=>event.target.select()} onChange={event=>{setRateNotice('');setRateDraft(prev=>({...prev,[rateKey(room.room_id,format(date,'yyyy-MM-dd'))]:event.target.value}));}} />{!expanded && <div className="mt-1">{freeBeds([room],calendarBookings,date)} available</div>}</div>)}
               </div>
               {expanded && room.beds.map(bed => <BedRow key={bed.bed_id} bedId={bed.bed_id} bedName={bed.bed_name} disabled={moving} drag={drag} target={target} allBookings={calendarBookings} onBeginMove={beginMove} onCancelMove={cancelMove} onTarget={setTarget} onDropMove={(bedId,day) => void dropMove(bedId,day)} dates={dates} today={today} bookingsByDate={calendarBookings[bed.bed_id] || {}} onBookingClick={id => void openBooking(id)} onEmptyClick={date => createOnBed(room,bed,date)} />)}
             </div>;

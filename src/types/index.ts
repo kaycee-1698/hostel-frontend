@@ -47,6 +47,7 @@ export interface Room {
   room_id: number;
   room_name: string;
   capacity: number;
+  base_rate?: number;
   beds: Bed[]; // Array of beds associated with the room
 }
 

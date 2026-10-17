@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import BedTag from './BedTag';
+import {formatRate} from '@/hooks/useRoomRates';
 import { Room } from '@/types';
 
 export default function RoomCard({ 
@@ -121,6 +122,7 @@ export default function RoomCard({
         </button>
       </div>
 
+<p className="text-sm text-gray-500">Base rate: {formatRate(room.base_rate)} per bed / night</p>
       {/* Beds section */}
       <div className="flex flex-wrap gap-2 items-center">
         {room.beds.map((bed) => (

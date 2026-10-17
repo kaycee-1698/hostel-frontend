@@ -58,7 +58,7 @@ export default function BookingsDashboard() {
   return (
     <div className="min-w-0 p-2 sm:p-4">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div><h1 className="text-xl font-semibold tracking-tight text-slate-900">Bookings</h1><p className="mt-1 text-sm text-slate-500">Find, review and manage your reservations.</p></div>
+        <div><h1 className="text-xl font-semibold tracking-tight text-slate-900">Bookings</h1></div>
         <button onClick={() => setIsModalOpen(true)} className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">+ Add booking</button>
       </div>
       <BookingFilters values={view} onChange={setView} onClear={clearAll} onQuickView={chooseQuickView} counts={counts} />

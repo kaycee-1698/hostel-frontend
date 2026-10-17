@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Booking } from '@/types';
 import { formatISO, addDays, differenceInDays } from 'date-fns';
+import {getBookingQuote} from '@/lib/api';
+import {formatRate} from '@/hooks/useRoomRates';
 import { useRooms } from '@/hooks/useRooms';
 
 const OTA_OPTIONS = ['Direct', 'Website', 'Booking.com', 'Hostelworld', 'Makemytrip', 'Extension'];
@@ -72,6 +74,28 @@ export default function BookingForm({
   // Keep the last valid count while the user clears and retypes the field.
   const [adultsBlank, setAdultsBlank] = useState(false);
 
+  const [suggestion,setSuggestion]=useState<{key:string;amount:number}|null>(null);
+  const [quoteError,setQuoteError]=useState('');
+  const [quoteLoading,setQuoteLoading]=useState(false);
+  const manualPrice=useRef(initialData.base_amount!=null);
+  const quoteKey=JSON.stringify([checkIn,checkOut,selectedRooms,numAdults,adultsBlank]);
+  useEffect(()=>{
+    if(initialData.booking_id)return;
+    let active=true;
+    setQuoteError('');setSuggestion(null);
+    if(!checkIn||!checkOut||checkOut<=checkIn||adultsBlank||selectedRooms.length!==numAdults||selectedRooms.some(room=>!room)){
+      setQuoteLoading(false);if(!manualPrice.current)setBaseAmount('');return;
+    }
+    setQuoteLoading(true);if(!manualPrice.current)setBaseAmount('');
+    const counts:Record<string,number>={};selectedRooms.forEach(room=>{counts[room]=(counts[room]||0)+1;});
+    getBookingQuote(checkIn,checkOut,counts).then(result=>{
+      if(!active)return;
+      setSuggestion({key:quoteKey,amount:result.base_amount});
+      if(!manualPrice.current)setBaseAmount(String(result.base_amount));
+    }).catch(()=>{if(active)setQuoteError('Default price unavailable. Enter a price manually.');}).finally(()=>{if(active)setQuoteLoading(false);});
+    return()=>{active=false;};
+  },[quoteKey,initialData.booking_id]);
+
   // Ref for booking name input to focus on open
   const bookingNameRef = useRef<HTMLInputElement>(null);
 
@@ -84,6 +108,7 @@ export default function BookingForm({
     setContactNumber('');
     setCheckIn(todayISO);
     setCheckOut(tomorrowISO);
+    manualPrice.current=false;setSuggestion(null);
     setBaseAmount('');
     setPaidAmount(0);
     setOtherInfo('');
@@ -175,7 +200,7 @@ export default function BookingForm({
     if (!checkIn) newErrors.push('Check-in date is required.');
     if (!checkOut) newErrors.push('Check-out date is required.');
     if (new Date(checkOut) <= new Date(checkIn)) newErrors.push('Check-out must be after check-in.');
-    if (!baseAmount || isNaN(parseFloat(baseAmount)) || parseFloat(baseAmount) <= 0) newErrors.push('Base amount must be greater than 0.');
+    if (!baseAmount || isNaN(parseFloat(baseAmount)) || parseFloat(baseAmount) < 0) newErrors.push('Base amount cannot be negative.');
     if (paidAmount == null || paidAmount < 0) newErrors.push('Paid amount can not be less than 0.');
     const allRoomsAssigned = selectedRooms.every((id) => id && id.trim() !== '');
     if (!allRoomsAssigned) newErrors.push('All adults must be assigned a room.');
@@ -329,13 +354,17 @@ export default function BookingForm({
 
           <div className="col-span-2 grid grid-cols-3 gap-2">
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Base Amount</label>
+              <div className="flex flex-wrap items-center justify-between gap-1"><label className="block text-sm text-gray-600 mb-1">Base Amount</label>
+              {!initialData.booking_id && suggestion?.key===quoteKey && <span className="text-xs text-gray-500">Default: {formatRate(suggestion.amount)}</span>}</div>
+              <p className="mb-1 text-xs text-gray-500">Excluding taxes</p>
+              {!initialData.booking_id && quoteLoading && <p className="text-xs text-gray-500">Calculating default…</p>}
+              {!initialData.booking_id && quoteError && <p className="text-xs text-gray-500">{quoteError}</p>}
               <input
                 type="number"
                 step="0.01"
                 className={`w-full border border-gray-300 px-3 py-1.5 rounded-md text-sm h-[33px] focus:outline-none focus:ring-1 focus:ring-blue-500 ${errors.some(e => e.toLowerCase().includes('base amount')) ? 'border-red-500' : ''}`}
                 value={baseAmount}
-                onChange={(e) => setBaseAmount(e.target.value)}
+                onChange={(e) => {manualPrice.current=true;setBaseAmount(e.target.value);}}
               />
             </div>
 

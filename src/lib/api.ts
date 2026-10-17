@@ -157,7 +157,9 @@ export async function updateBooking(id: number, editedBooking: any, requiresReas
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(room),
     });
-    return res.json();
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Could not create room. Please try again.');
+    return data;
   }
 
   export async function updateRoom(id: number, room: any) {
@@ -253,4 +255,18 @@ export async function moveCalendarAssignment(id: number, move: {
   const body = await response.json().catch(() => null);
   if (!response.ok) throw new Error(body?.error || 'Could not move the assignment. Refresh and try again.');
   return body;
+}
+
+export async function getRoomRates(start:string,end:string){
+ const res=await fetch(`${BASE_URL}/room-rates?${new URLSearchParams({start,end})}`,{cache:'no-store'});
+ if(!res.ok)throw new Error('Could not load rates');return res.json();
+}
+export async function saveRoomRates(updates:{room_id:number;date:string;rate:number|null}[]){
+ const res=await fetch(`${BASE_URL}/room-rates`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({updates})});
+ const data=await res.json();if(!res.ok)throw new Error(data.error||'Could not save rates.');return data;
+}
+
+export async function getBookingQuote(check_in:string,check_out:string,guests_per_room:Record<string,number>){
+ const res=await fetch(`${BASE_URL}/room-rates/quote`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({check_in,check_out,guests_per_room})});
+ const data=await res.json();if(!res.ok)throw new Error(data.error||'Could not calculate price.');return data as {base_amount:number};
 }

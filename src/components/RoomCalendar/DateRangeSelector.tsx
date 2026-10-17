@@ -28,15 +28,15 @@ export default function DateRangeSelector({ startDate, endDate, onChange }: {
         <label>From: <input type="date" required
           value={format(startDate, 'yyyy-MM-dd')}
           max={format(endDate, 'yyyy-MM-dd')}
-          aria-describedby="calendar-range-help"
+
           onChange={(e) => change(e.target.value, 'start')} /></label>
         <label>To: <input type="date" required
           value={format(endDate, 'yyyy-MM-dd')}
           min={format(startDate, 'yyyy-MM-dd')}
-          aria-describedby="calendar-range-help"
+
           onChange={(e) => change(e.target.value, 'end')} /></label>
       </div>
-      <p id="calendar-range-help" className="mt-1 text-xs text-gray-600">Both dates are included.</p>
+
       {error && <p role="alert" className="mt-1 text-sm text-red-600">{error}</p>}
     </div>
   );

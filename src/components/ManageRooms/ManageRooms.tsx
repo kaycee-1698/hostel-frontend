@@ -7,11 +7,12 @@ import { useRooms } from '@/hooks/useRooms';
 
 export default function ManageRooms() {
     const {rooms, addRoom, removeRoom, updateSingleRoom, addBedToRoom, removeBedFromRoom, updateBedName } = useRooms();
+    const [roomSaving,setRoomSaving]=useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
   
-    const handleAddRoom = async (name: string) => {
-        await addRoom({ room_name: name });
+    const handleAddRoom = async (name: string,baseRate:number) => {
+        await addRoom({room_name:name,base_rate:baseRate});
         setSuccessMessage(`Room "${name}" added successfully.`);
         setTimeout(() => setSuccessMessage(''), 10000);
     };
@@ -75,10 +76,11 @@ export default function ManageRooms() {
                 updateBed = {handleEditBed} />
             ))}
         </div>
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create Room">
+        <Modal isOpen={isModalOpen} onClose={() => {if(!roomSaving)setIsModalOpen(false);}} title="Create Room">
             <AddRoomModal 
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
+            onSavingChange={setRoomSaving}
             onSave={handleAddRoom}
         />
         </Modal>

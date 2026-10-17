@@ -130,6 +130,8 @@ test('undo restores original assignment, blocks repeat clicks, and retains retry
   };
   const {default: Calendar} = load('components/RoomCalendar/RoomCalendar.tsx', {
     react,'react/jsx-runtime':{jsx,jsxs:jsx},'date-fns':dates,
+    '@/hooks/useUnsavedRates':{useUnsavedRates(){}},'next/link':{default:'Link'},'@/components/Rates/RateEditor':{default:'RateEditor'},
+    '@/hooks/useRoomRates':{useRoomRates:()=>({rates:{},ready:true,saveRates(){}}),formatRate:()=> 'Set rate',rateKey:(id,day)=>`${id}:${day}`,validRate:()=>true},
     '@/lib/bookingFilters':{hostelToday:()=> '2026-10-16'},'@/lib/calendarUtils':utils,
     '@/hooks/useRooms':{useRooms:()=>({rooms:[{room_id:1,room_name:'Dorm',beds:[{bed_id:1,bed_name:'Bed 1'}]}],fetchRooms:async()=>{}})},
     '@/hooks/useBookings':{useBookings:()=>({})},
@@ -194,4 +196,19 @@ test('undo restores original assignment, blocks repeat clicks, and retains retry
   assert.equal(undo(),undefined);
   noticeEffect();assert.equal(timeoutMs,5000);timeout();
   assert.equal(find(render(),node=>node.props?.role==='status' && /restored/.test(node.props.children)),undefined);
+});
+
+test('unsaved-rate guard cancels links, refresh and Back; confirmed Back leaves once',()=>{
+ const win={},doc={};let effect,answer=false,forward=0,back=0,confirmed=0;
+ const browser={history:{state:{},pushState(){},forward(){forward++;},back(){back++;}},confirm(){confirmed++;return answer;},addEventListener(name,fn){win[name]=fn;},removeEventListener(name){delete win[name];}};
+ const document={addEventListener(name,fn){doc[name]=fn;},removeEventListener(name){delete doc[name];}};
+ const {useUnsavedRates}=load('hooks/useUnsavedRates.ts',{react:{useRef:value=>({current:value}),useEffect:fn=>{effect=fn;}}},{window:browser,document,location:{href:'http://local/calendar'}});
+ useUnsavedRates(true);const cleanup=effect();let prevented=0,stopped=0;
+ doc.click({button:0,target:{closest:()=>({href:'http://local/bookings',hasAttribute:()=>false})},preventDefault(){prevented++;},stopImmediatePropagation(){stopped++;}});
+ assert.equal(prevented,1);assert.equal(stopped,1);
+ win.beforeunload({preventDefault(){prevented++;}});assert.equal(prevented,2);
+ win.popstate({state:{},stopImmediatePropagation(){}});assert.equal(forward,1);assert.equal(back,0);
+ win.popstate({state:{rateGuard:true}});answer=true;
+ win.popstate({state:{},stopImmediatePropagation(){}});assert.equal(back,1);assert.equal(win.popstate,undefined);assert.equal(confirmed,3);
+ cleanup();assert.equal(doc.click,undefined);
 });

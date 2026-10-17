@@ -20,7 +20,7 @@ function load(file, dependencies = {}, globals = {}) {
 }
 
 function harness(file, dependencies, initial = []) {
-  const state = [...initial], refs = [];
+  const state = [...initial], refs = [], effects = [];
   let index = 0, refIndex = 0;
   const react = {
     useState(value) {
@@ -29,11 +29,11 @@ function harness(file, dependencies, initial = []) {
       return [state[slot], next => { state[slot] = typeof next === 'function' ? next(state[slot]) : next; }];
     },
     useRef(value) { const slot = refIndex++; return refs[slot] ||= { current: value }; },
-    useEffect() {},
+    useEffect(fn,deps) { effects.push({fn,deps}); },
   };
   const jsx = (type, props) => ({ type, props });
   const component = load(file, { react, 'react/jsx-runtime': { jsx, jsxs: jsx }, ...dependencies }, { alert() {} }).default;
-  return { state, refs, render(props) { index = 0; refIndex = 0; return component(props); } };
+  return { state, refs, effects, render(props) { effects.length=0; index = 0; refIndex = 0; return component(props); } };
 }
 function find(node, predicate) {
   if (!node || typeof node !== 'object') return undefined;
@@ -108,7 +108,7 @@ test('clearing signature removes stale saved image from submission', async () =>
 
 test('adult field rejects negative and decimal counts without creating invalid arrays', () => {
   const h = harness('components/Bookings/BookingForm.tsx', {
-    'date-fns': require('date-fns'), '@/hooks/useRooms': { useRooms: () => ({ rooms: [] }) },
+    '@/lib/api':{getBookingQuote:async()=>({base_amount:600})},'@/hooks/useRoomRates':{formatRate:value=>String(value)}, 'date-fns': require('date-fns'), '@/hooks/useRooms': { useRooms: () => ({ rooms: [] }) },
   });
   for (const value of ['-1', '1.5', '10000000000']) {
     const form = h.render({ onSave() {}, onClose() {} });
@@ -141,7 +141,7 @@ test('unreadable image blocks check-in until the invalid selection is cleared', 
 
 test('clearing the booking check-in date does not crash rendering', () => {
   const h = harness('components/Bookings/BookingForm.tsx', {
-    'date-fns': require('date-fns'), '@/hooks/useRooms': { useRooms: () => ({ rooms: [] }) },
+    '@/lib/api':{getBookingQuote:async()=>({base_amount:600})},'@/hooks/useRoomRates':{formatRate:value=>String(value)}, 'date-fns': require('date-fns'), '@/hooks/useRooms': { useRooms: () => ({ rooms: [] }) },
   });
   const props = { onSave() {}, onClose() {} };
   const form = h.render(props);
@@ -154,7 +154,7 @@ test('booking save blocks rapid repeated clicks and calls success once', async (
   let calls = 0, successes = 0, savedCloses = 0, resolve;
   const pending = new Promise(done => { resolve = done; });
   const h = harness('components/Bookings/BookingForm.tsx', {
-    'date-fns': require('date-fns'), '@/hooks/useRooms': { useRooms: () => ({ rooms: [] }) },
+    '@/lib/api':{getBookingQuote:async()=>({base_amount:600})},'@/hooks/useRoomRates':{formatRate:value=>String(value)}, 'date-fns': require('date-fns'), '@/hooks/useRooms': { useRooms: () => ({ rooms: [] }) },
   });
   const props = { initialData: { preferred_bed_id: 7, booking_name: 'Test', number_of_adults: 1, base_amount: 100,
     check_in: '2026-10-20', check_out: '2026-10-21', guests_per_room: {1:1} },
@@ -179,7 +179,7 @@ test('deletion displays backend explanation', async () => {
 test('adult count can be cleared and retyped, but cannot be saved blank', async () => {
   let saves=0;
   const h=harness('components/Bookings/BookingForm.tsx', {
-    'date-fns':require('date-fns'), '@/hooks/useRooms':{useRooms:()=>({rooms:[]})},
+    '@/lib/api':{getBookingQuote:async()=>({base_amount:600})},'@/hooks/useRoomRates':{formatRate:value=>String(value)}, 'date-fns':require('date-fns'), '@/hooks/useRooms':{useRooms:()=>({rooms:[]})},
   });
   const props={onSave(){saves++;},onClose(){}};
   const input=()=>find(h.render(props),n=>n.type==='input' && n.props.max===1000);
@@ -189,4 +189,60 @@ test('adult count can be cleared and retyped, but cannot be saved blank', async 
   assert.equal(saves,0);
   input().props.onChange({target:{value:'3'}});
   assert.equal(input().props.value,3);
+});
+
+test('new booking quote ignores stale responses and preserves manually entered price', async()=>{
+ const pending=[];
+ const h=harness('components/Bookings/BookingForm.tsx',{
+  'date-fns':require('date-fns'),'@/hooks/useRooms':{useRooms:()=>({rooms:[]})},
+  '@/hooks/useRoomRates':{formatRate:value=>String(value)},
+  '@/lib/api':{getBookingQuote:(...args)=>new Promise(resolve=>pending.push({args,resolve}))},
+ });
+ const props={initialData:{number_of_adults:1,guests_per_room:{1:1},check_in:'2026-10-17',check_out:'2026-10-19'},onSave(){},onClose(){}};
+ const quoteEffect=()=>h.effects.find(effect=>effect.deps?.length===2 && typeof effect.deps[0]==='string' && effect.deps[0].startsWith('[')).fn;
+ h.render(props);const cleanup=quoteEffect()();
+ h.state[5]='2026-10-20';h.render(props);cleanup();quoteEffect()();
+ pending[1].resolve({base_amount:1800});await new Promise(setImmediate);h.render(props);assert.equal(h.state[6],'1800');
+ pending[0].resolve({base_amount:1200});await new Promise(setImmediate);assert.equal(h.state[6],'1800');
+ const price=find(h.render(props),node=>node.type==='input' && node.props.value==='1800');price.props.onChange({target:{value:'1500'}});
+ h.state[5]='2026-10-21';h.render(props);quoteEffect()();pending[2].resolve({base_amount:2400});await new Promise(setImmediate);
+ assert.equal(h.state[6],'1500');assert.ok(find(h.render(props),node=>node.type==='span' && JSON.stringify(node.props.children).includes('2400')));
+});
+test('editing an existing booking never requests a rate quote',()=>{
+ let calls=0;const h=harness('components/Bookings/BookingForm.tsx',{
+  'date-fns':require('date-fns'),'@/hooks/useRooms':{useRooms:()=>({rooms:[]})},
+  '@/hooks/useRoomRates':{formatRate:String},'@/lib/api':{getBookingQuote(){calls++;}},
+ });
+ h.render({initialData:{booking_id:9,base_amount:1234},onSave(){},onClose(){}});
+ h.effects.find(effect=>effect.deps?.length===2 && typeof effect.deps[0]==='string' && effect.deps[0].startsWith('[')).fn();
+ assert.equal(calls,0);assert.equal(h.state[6],'1234');
+});
+
+test('room creation prevents repeat saves and retains fields after failure',async()=>{
+ let calls=0,rejectSave;const pending=new Promise((_,reject)=>{rejectSave=reject;});
+ const h=harness('components/ManageRooms/AddRoomModal.tsx',{});
+ const props={isOpen:true,onSave:()=>{calls++;return pending;},onClose(){throw Error('Must remain open');}};
+ h.render(props);h.state[0]='Dorm';h.state[1]='600';
+ const save=find(h.render(props),node=>node.type==='button'&&node.props.children==='Save');
+ const first=save.props.onClick();await save.props.onClick();assert.equal(calls,1);
+ assert.equal(find(h.render(props),node=>node.type==='button'&&node.props.children==='Cancel').props.disabled,true);
+ rejectSave(Error('Network unavailable'));await first;
+ assert.equal(h.state[0],'Dorm');assert.equal(h.state[1],'600');
+ assert.ok(find(h.render(props),node=>node.props?.role==='alert'));
+});
+
+test('bulk rate save omits blank rooms, blocks repeats and clears only after success',async()=>{
+ let calls=0,resolveSave,sent;const pending=new Promise(resolve=>{resolveSave=resolve;});
+ const h=harness('app/dashboard/rates/bulk/page.tsx',{
+  'next/link':{default:'Link'},'date-fns':require('date-fns'),
+  '@/hooks/useRooms':{useRooms:()=>({rooms:[{room_id:1,room_name:'A'},{room_id:2,room_name:'B'}]})},
+  '@/hooks/useRoomRates':{useRoomRates:()=>({ready:true,saveRates:updates=>{calls++;sent=updates;return pending;}}),rateKey:(id,date)=>`${id}:${date}`,validRate:value=>/^\d+$/.test(value)},
+  '@/lib/bookingFilters':{hostelToday:()=> '2026-10-17'},
+ });
+ h.render({});h.state[3]={1:'700',2:''};
+ const save=find(h.render({}),node=>node.type==='button'&&node.props.children==='Save');
+ const first=save.props.onClick();await save.props.onClick();
+ assert.equal(calls,1);assert.equal(Object.keys(sent).length,1);assert.equal(sent['1:2026-10-17'],700);
+ assert.equal(h.state[3][1],'700');
+ resolveSave();await first;assert.equal(Object.keys(h.state[3]).length,0);
 });
