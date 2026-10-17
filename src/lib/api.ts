@@ -270,3 +270,16 @@ export async function getBookingQuote(check_in:string,check_out:string,guests_pe
  const res=await fetch(`${BASE_URL}/room-rates/quote`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({check_in,check_out,guests_per_room})});
  const data=await res.json();if(!res.ok)throw new Error(data.error||'Could not calculate price.');return data as {base_amount:number};
 }
+
+export async function getDashboard(){
+ const res=await fetch(`${BASE_URL}/dashboard`,{cache:'no-store'});
+ if(!res.ok)throw new Error('Could not load dashboard');
+ return res.json();
+}
+
+export type BookingSearchResult=Pick<Booking,'booking_id'|'booking_name'|'contact_number'|'check_in'|'check_out'|'number_of_adults'>;
+export async function searchBookings(query:string,signal?:AbortSignal):Promise<BookingSearchResult[]>{
+ const res=await fetch(`${BASE_URL}/bookings/search?${new URLSearchParams({q:query})}`,{signal,cache:'no-store'});
+ if(!res.ok)throw new Error('Could not search bookings. Please try again.');
+ return res.json();
+}

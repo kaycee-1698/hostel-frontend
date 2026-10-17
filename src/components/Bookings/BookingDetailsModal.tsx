@@ -22,7 +22,7 @@ export default function BookingDetailsModal({
 }: BookingDetailsModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null);
-  const { updateSingleBooking } = useBookings();
+  const { updateSingleBooking } = useBookings(false);
 
   useEffect(() => {
   if (booking) {
@@ -92,7 +92,7 @@ export default function BookingDetailsModal({
   return (
     <>
       {isEditing ? (
-          <Modal isOpen={isOpen} onClose={onClose} title="Edit Booking">
+          <Modal isOpen={isOpen} onClose={handleCancel} title="Edit Booking">
             <BookingForm
               initialData={editedBookingWithGuests}
               onSaved={() => setIsEditing(false)}

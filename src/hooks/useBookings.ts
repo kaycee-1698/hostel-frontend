@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getAllBookings, deleteBooking, updateBooking, createBooking, getBookingById, getBookingWithBedsAndRooms } from '@/lib/api';
 import { Booking } from '@/types';
 
-export function useBookings() {
+export function useBookings(autoLoad = true) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -78,8 +78,8 @@ export function useBookings() {
   };
 
   useEffect(() => {
-    void fetchBookings().catch(() => {});
-  }, []);
+    if (autoLoad) void fetchBookings().catch(() => {});
+  }, [autoLoad]);
 
   return {
     bookings,

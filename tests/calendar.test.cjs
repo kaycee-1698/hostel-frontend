@@ -212,3 +212,14 @@ test('unsaved-rate guard cancels links, refresh and Back; confirmed Back leaves 
  win.popstate({state:{},stopImmediatePropagation(){}});assert.equal(back,1);assert.equal(win.popstate,undefined);assert.equal(confirmed,3);
  cleanup();assert.equal(doc.click,undefined);
 });
+
+test('live dashboard ignores superseded requests and keeps previous data on refresh failure',async()=>{
+ const states=[],refs=[];let index=0,refIndex=0,effect;const pending=[];
+ const react={useState(initial){const slot=index++;if(!(slot in states))states[slot]=initial;return [states[slot],value=>{states[slot]=value;}];},useRef(initial){return refs[refIndex++]||=( {current:initial});},useCallback:fn=>fn,useEffect:fn=>{effect=fn;}};
+ const {useDashboard}=load('hooks/useDashboard.ts',{react,'@/lib/api':{getDashboard:()=>new Promise((resolve,reject)=>pending.push({resolve,reject}))}},{window:{addEventListener(){},removeEventListener(){}},setInterval(){return 1;},clearInterval(){}});
+ const render=()=>{index=0;refIndex=0;return useDashboard();};
+ render();const cleanup=effect();const second=render().refresh();pending[1].resolve({available:10});await second;
+ pending[0].resolve({available:99});await new Promise(setImmediate);assert.equal(render().data.available,10);
+ const failed=render().refresh();pending[2].reject(Error('offline'));await failed;
+ assert.equal(render().data.available,10);assert.match(render().error,/retry/);cleanup();
+});
