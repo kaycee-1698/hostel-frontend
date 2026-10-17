@@ -1,10 +1,12 @@
 'use client';
+import CollectPaymentButton from '../Bookings/CollectPaymentButton';
 import { useRef } from 'react';
 import { format, parseISO } from 'date-fns';
 import { CalendarBookings } from '@/types';
 import { dateShade, CalendarDrag, movedStay, visibleMoveConflict } from '@/lib/calendarUtils';
 export default function BedRow({ bedId, bedName, dates, today, bookingsByDate, onBookingClick, onEmptyClick,
-  disabled, drag, target, allBookings, onBeginMove, onCancelMove, onTarget, onDropMove }: {
+  onPaymentSaved, disabled, drag, target, allBookings, onBeginMove, onCancelMove, onTarget, onDropMove }: {
+  onPaymentSaved?: () => Promise<unknown>;
   bedId: number; bedName: string; dates: Date[]; today: string;
   bookingsByDate: CalendarBookings[number];
   onBookingClick: (id: number) => void; onEmptyClick: (date: Date) => void;
@@ -81,6 +83,7 @@ export default function BedRow({ bedId, bedName, dates, today, bookingsByDate, o
           className={`h-full min-h-11 w-full select-none ${booking ? 'touch-none' : ''} truncate px-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-indigo-600 disabled:cursor-wait ${inPreview ? (conflict ? 'bg-red-200 ring-1 ring-inset ring-red-400' : 'bg-indigo-200 ring-1 ring-inset ring-indigo-400') : booking ? 'bg-emerald-100 text-emerald-950 hover:bg-emerald-200 cursor-grab active:cursor-grabbing' : 'text-slate-400 hover:bg-indigo-100'} ${source ? 'opacity-50' : ''}`}>
           {booking ? booking.booking_name : <span aria-hidden="true" className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">{drag ? 'Move here' : '+ Book'}</span>}
         </button>
+        {booking && !drag && !disabled && onPaymentSaved && <div className="absolute bottom-0 right-0"><CollectPaymentButton id={booking.booking_id} name={booking.booking_name} pending={booking.pending_amount??0} onSaved={onPaymentSaved}/></div>}
         {booking && !drag && <div role="tooltip" className="pointer-events-none absolute bottom-full left-0 z-40 hidden w-64 rounded bg-slate-900 p-2 text-xs text-white shadow-lg group-hover:block group-focus-within:block">{description}<br />Drag vertically to change beds · Space to choose</div>}
       </div>;
     })}

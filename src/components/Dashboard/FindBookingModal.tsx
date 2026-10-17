@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
+import CollectPaymentButton from '../Bookings/CollectPaymentButton';
 import Link from 'next/link';
 import {format,parseISO} from 'date-fns';
 import {searchBookings,BookingSearchResult} from '@/lib/api';
@@ -34,7 +35,7 @@ export default function FindBookingModal({onClose,onSelect,opening,openError}:{o
    {error&&<p role="alert" className="mt-3 text-sm text-red-700">{error} <button className="underline" onClick={()=>setRetry(value=>value+1)}>Retry</button></p>}
    {openError&&<p role="alert" className="mt-3 text-sm text-red-700">{openError}</p>}
    <ul id="booking-search-results" aria-label="Matching bookings" className="mt-2 max-h-[45vh] overflow-y-auto divide-y divide-slate-100 rounded-lg border border-slate-100 empty:hidden">
-    {results.map(booking=><li key={booking.booking_id}><button disabled={opening} onClick={()=>void onSelect(booking.booking_id)} className="w-full px-3 py-3 text-left hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-indigo-600 disabled:opacity-50"><span className="block text-sm font-medium">{booking.booking_name} <span className="font-normal text-slate-400">#{booking.booking_id}</span></span><span className="mt-1 block text-xs text-slate-500">{format(parseISO(booking.check_in),'d MMM yyyy')} – {format(parseISO(booking.check_out),'d MMM yyyy')} · {booking.number_of_adults} guest{booking.number_of_adults===1?'':'s'}{booking.contact_number?` · ${booking.contact_number}`:''}</span></button></li>)}
+    {results.map(booking=><li key={booking.booking_id} className="group"><button disabled={opening} onClick={()=>void onSelect(booking.booking_id)} className="w-full px-3 py-3 text-left hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-indigo-600 disabled:opacity-50"><span className="block text-sm font-medium">{booking.booking_name} <span className="font-normal text-slate-400">#{booking.booking_id}</span></span><span className="mt-1 block text-xs text-slate-500">{format(parseISO(booking.check_in),'d MMM yyyy')} – {format(parseISO(booking.check_out),'d MMM yyyy')} · {booking.number_of_adults} guest{booking.number_of_adults===1?'':'s'}{booking.contact_number?` · ${booking.contact_number}`:''}</span></button><div className="px-3 pb-2"><CollectPaymentButton id={booking.booking_id} name={booking.booking_name} pending={booking.pending_amount} onSaved={saved=>setResults(rows=>rows.map(row=>row.booking_id===saved.booking_id?{...row,...saved}:row))}/></div></li>)}
    </ul>
    {results.length===20&&<p className="mt-2 text-xs text-slate-500">Showing 20 matches. Keep typing to narrow your search.</p>}
    <div className="mt-4 border-t border-slate-100 pt-4"><Link href="/dashboard/bookings" className="text-sm font-medium text-indigo-600 hover:underline">View all bookings →</Link></div>

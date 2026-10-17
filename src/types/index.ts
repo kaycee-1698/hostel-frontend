@@ -64,6 +64,7 @@ export type CalendarBookings = {
       booking_bed_id: number;
       booking_id: number;
       booking_name: string;
+      pending_amount?: number;
       check_in: string;
       check_out: string;
     };

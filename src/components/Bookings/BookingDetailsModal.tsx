@@ -5,6 +5,7 @@ import { Booking, Room } from '@/types';
 import Modal from '../Modal/Modal';
 import BookingForm from './BookingForm';
 import { useBookings } from '@/hooks/useBookings';
+import CollectPaymentButton from './CollectPaymentButton';
 import BookingDetails from './BookingDetails';
 
 interface BookingDetailsModalProps {
@@ -103,6 +104,7 @@ export default function BookingDetailsModal({
       ) : (
         <Modal isOpen={isOpen} onClose={onClose} title={"Booking Details"}>
           <BookingDetails booking={booking} />
+          <CollectPaymentButton alwaysVisible id={booking.booking_id} name={booking.booking_name} pending={booking.pending_amount} onSaved={saved=>onSave({...booking,...saved})}/>
           <div className="flex justify-end mt-4 gap-2">
             <button
             onClick={() => setIsEditing(true)}

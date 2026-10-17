@@ -120,7 +120,7 @@ export default function BookingsTable({ bookings, allBookings, view, filters, so
           </thead>
           <tbody>
             {bookings.length ? bookings.map(booking => <BookingRow key={booking.booking_id} booking={booking}
-              isSelected={selected.includes(booking.booking_id)}
+              onPaymentSaved={onSaved} isSelected={selected.includes(booking.booking_id)}
               onToggleSelect={() => setSelectedIds(previous => previous.includes(booking.booking_id) ? previous.filter(id => id !== booking.booking_id) : [...previous, booking.booking_id])}
               onRowClick={() => void openBooking(booking.booking_id)} />) : <tr><td colSpan={11} className="px-5 py-16 text-center">
                 <FunnelIcon aria-hidden="true" className="mx-auto mb-3 h-6 w-6 text-slate-300" />

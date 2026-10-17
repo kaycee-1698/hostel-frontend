@@ -277,7 +277,7 @@ export async function getDashboard(){
  return res.json();
 }
 
-export type BookingSearchResult=Pick<Booking,'booking_id'|'booking_name'|'contact_number'|'check_in'|'check_out'|'number_of_adults'>;
+export type BookingSearchResult=Pick<Booking,'booking_id'|'booking_name'|'contact_number'|'check_in'|'check_out'|'number_of_adults'|'pending_amount'>;
 export async function searchBookings(query:string,signal?:AbortSignal):Promise<BookingSearchResult[]>{
  const res=await fetch(`${BASE_URL}/bookings/search?${new URLSearchParams({q:query})}`,{signal,cache:'no-store'});
  if(!res.ok)throw new Error('Could not search bookings. Please try again.');
@@ -290,5 +290,13 @@ export async function getActivityLogs(filters:Record<string,string>,signal?:Abor
  const res=await fetch(`${BASE_URL}/activity-logs?${new URLSearchParams(filters)}`,{signal,cache:'no-store'});
  const data=await res.json();
  if(!res.ok)throw new Error(data.error||'Could not load activity logs. Please try again.');
+ return data;
+}
+
+export async function collectBookingPayment(id:number,amount:number,request_id:string):Promise<Booking>{
+ const res=await fetch(`${BASE_URL}/bookings/${id}/collect-payment`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount,request_id})});
+ const data=await res.json().catch(()=>null);
+ if(!res.ok){const error=new Error(data?.error||'Could not confirm the payment. Please retry.') as Error&{definitive?:boolean};error.definitive=res.status===400||res.status===409;throw error;}
+ if(!data?.booking_id)throw new Error('Could not confirm the payment. Please retry.');
  return data;
 }

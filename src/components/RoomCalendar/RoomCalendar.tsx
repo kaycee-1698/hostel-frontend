@@ -197,7 +197,7 @@ export default function RoomCalendar() {
                   value={rateDraft[rateKey(room.room_id,format(date,'yyyy-MM-dd'))] === null ? (rates[room.room_id] ?? '') : rateDraft[rateKey(room.room_id,format(date,'yyyy-MM-dd'))] ?? (rates[rateKey(room.room_id,format(date,'yyyy-MM-dd'))] ?? rates[room.room_id] ?? '')}
                   onFocus={event=>event.target.select()} onChange={event=>{setRateNotice('');setRateDraft(prev=>({...prev,[rateKey(room.room_id,format(date,'yyyy-MM-dd'))]:event.target.value}));}} />{!expanded && <div className="mt-1">{freeBeds([room],calendarBookings,date)} available</div>}</div>)}
               </div>
-              {expanded && room.beds.map(bed => <BedRow key={bed.bed_id} bedId={bed.bed_id} bedName={bed.bed_name} disabled={moving} drag={drag} target={target} allBookings={calendarBookings} onBeginMove={beginMove} onCancelMove={cancelMove} onTarget={setTarget} onDropMove={(bedId,day) => void dropMove(bedId,day)} dates={dates} today={today} bookingsByDate={calendarBookings[bed.bed_id] || {}} onBookingClick={id => void openBooking(id)} onEmptyClick={date => createOnBed(room,bed,date)} />)}
+              {expanded && room.beds.map(bed => <BedRow onPaymentSaved={refresh} key={bed.bed_id} bedId={bed.bed_id} bedName={bed.bed_name} disabled={moving} drag={drag} target={target} allBookings={calendarBookings} onBeginMove={beginMove} onCancelMove={cancelMove} onTarget={setTarget} onDropMove={(bedId,day) => void dropMove(bedId,day)} dates={dates} today={today} bookingsByDate={calendarBookings[bed.bed_id] || {}} onBookingClick={id => void openBooking(id)} onEmptyClick={date => createOnBed(room,bed,date)} />)}
             </div>;
           })}
         </div>
