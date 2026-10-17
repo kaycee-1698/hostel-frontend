@@ -283,3 +283,12 @@ export async function searchBookings(query:string,signal?:AbortSignal):Promise<B
  if(!res.ok)throw new Error('Could not search bookings. Please try again.');
  return res.json();
 }
+
+export type ActivityLog={log_id:number;occurred_at:string;actor_name:string;actor_role:string;action:string;entity_type:string;entity_id:string;summary:string;changed_fields:string[];before_values:Record<string,unknown>|null;after_values:Record<string,unknown>|null};
+export type ActivityLogResponse={logs:ActivityLog[];total:number;page:number;pageSize:number};
+export async function getActivityLogs(filters:Record<string,string>,signal?:AbortSignal):Promise<ActivityLogResponse>{
+ const res=await fetch(`${BASE_URL}/activity-logs?${new URLSearchParams(filters)}`,{signal,cache:'no-store'});
+ const data=await res.json();
+ if(!res.ok)throw new Error(data.error||'Could not load activity logs. Please try again.');
+ return data;
+}
