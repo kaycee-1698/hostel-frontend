@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { Booking, Room } from '@/types';
 import Modal from '../Modal/Modal';
@@ -105,7 +106,7 @@ export default function BookingDetailsModal({
         <Modal isOpen={isOpen} onClose={onClose} title={"Booking Details"}>
           <BookingDetails booking={booking} />
           <CollectPaymentButton alwaysVisible id={booking.booking_id} name={booking.booking_name} pending={booking.pending_amount} onSaved={saved=>onSave({...booking,...saved})}/>
-          <div className="flex justify-end mt-4 gap-2">
+          <div className="flex justify-end mt-4 gap-2"><Link href={`/dashboard/invoices?booking=${booking.booking_id}`} className="rounded-lg border border-slate-300 px-4 py-2 text-indigo-600">Invoice / download</Link>
             <button
             onClick={() => setIsEditing(true)}
             className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-700"

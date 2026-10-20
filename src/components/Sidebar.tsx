@@ -48,6 +48,8 @@ export default function Sidebar() {
           </div>
         </Link>
         <Link href="/dashboard/rates/bulk"><SidebarItem icon="₹" label="Bulk Update Rates" collapsed={collapsed} /></Link>
+        <Link href="/dashboard/extras"><SidebarItem icon="🛍️" label="Extras" collapsed={collapsed} /></Link>
+        <Link href="/dashboard/invoices"><SidebarItem icon="🧾" label="Invoices" collapsed={collapsed} /></Link>
         <Link href="/dashboard/logs"><SidebarItem icon="📋" label="Activity Logs" collapsed={collapsed} /></Link>
       </nav>
     </div>

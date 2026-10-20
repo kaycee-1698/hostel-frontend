@@ -4,7 +4,7 @@ import {getActivityLogs,ActivityLog,ActivityLogResponse} from '@/lib/api';
 import {hostelToday} from '@/lib/bookingFilters';
 
 const actions:Record<string,string>={create:'Created',update:'Updated / Edited',delete:'Deleted',assign:'Assigned',reassign:'Reassigned / Changed stay',unassign:'Unassigned',rate_change:'Rate changed'};
-const categories:Record<string,string>={booking:'Bookings',room:'Rooms',bed:'Beds',bed_assignment:'Bed assignments',room_assignment:'Room assignments',rate:'Nightly rates',guest:'Guests',payment:'Payments',document:'Guest documents'};
+const categories:Record<string,string>={booking:'Bookings',room:'Rooms',bed:'Beds',bed_assignment:'Bed assignments',room_assignment:'Room assignments',rate:'Nightly rates',guest:'Guests',payment:'Payments',document:'Guest documents',extra_item:'Extra items',extra_sale:'Extras payments',invoice:'Invoices'};
 type Filters={period:string;start:string;end:string;search:string;action:string;entity:string};
 const initialFilters=():Filters=>({period:'today',start:hostelToday(),end:hostelToday(),search:'',action:'',entity:''});
 const control='rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-indigo-600';

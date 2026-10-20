@@ -300,3 +300,32 @@ export async function collectBookingPayment(id:number,amount:number,request_id:s
  if(!data?.booking_id)throw new Error('Could not confirm the payment. Please retry.');
  return data;
 }
+
+export type ExtraItem={item_id:number;name:string;category:string;price:number|null;active:boolean};
+export type ExtraSale={sale_id:string;item_id:number;item_name:string;category:string;quantity:number;unit_price:number;total:number;paid_on:string;payment_method:string;booking_id:number|null;booking_name:string|null;notes:string;status:'Recorded'|'Voided';void_reason:string|null;paid_amount:number;customer_name:string;lines:ExtraLine[]};
+export type ExtraLine={item_id:number;name?:string;quantity:number;unit_price:number;total?:number};
+export type ExtraSaleInput={request_id:string;lines:ExtraLine[];paid:boolean;customer_name:string;paid_on:string;method:string;booking_id:number|null;notes:string};
+async function extrasRequest(path:string,options?:RequestInit){
+ const res=await fetch(`${BASE_URL}/extras/${path}`,{cache:'no-store',...options});
+ const body=await res.json().catch(()=>null);
+ if(!res.ok){const error=new Error(body?.error||'Could not complete the request. Please retry.') as Error&{definitive?:boolean};error.definitive=res.status===400||res.status===409;throw error;}
+ return body;
+}
+export const getExtraItems=():Promise<ExtraItem[]>=>extrasRequest('items');
+export const saveExtraItem=(item:Omit<ExtraItem,'item_id'>,id?:number):Promise<ExtraItem>=>extrasRequest(id?`items/${id}`:'items',{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item)});
+export const getExtraSales=(filters:Record<string,string>,signal?:AbortSignal):Promise<{sales:ExtraSale[];count:number;total:number;pending:number;page:number;pageSize:number}>=>extrasRequest(`sales?${new URLSearchParams(filters)}`,{signal});
+export const recordExtraSale=(input:ExtraSaleInput):Promise<ExtraSale>=>extrasRequest('sales',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});
+export const voidExtraSale=(id:string,reason:string):Promise<ExtraSale>=>extrasRequest(`sales/${id}/void`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason})});
+
+export const collectExtraPayment=(id:string,input:{request_id:string;amount:number;method:string}):Promise<ExtraSale>=>extrasRequest(`sales/${id}/collect`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});
+
+export type InvoiceLine={kind?:'accommodation'|'extra';description:string;sac:string;quantity:number;unit_price:number;discount:number;tax_rate:number;tax_basis:'inclusive'|'exclusive'};
+export type InvoiceDraft={stay_beds?:({bed_id:number;room_name:string;bed_name:string}|null)[];phone_country?:string;phone_national?:string;payment_mode?:string;customer_name:string;customer_phone:string;customer_email:string;customer_address:string;customer_gstin:string;place_of_supply:string;issue_date:string;due_date:string;check_in:string;check_out:string;guests:string;stay_details:string;notes:string;tax_mode:'split'|'igst';lines:InvoiceLine[];amount_paid:number;source_balance?:number};
+export type IssuedInvoice={invoice_id:string;invoice_number:string;booking_id:number|null;created_at:string;snapshot:InvoiceDraft&{total:number;balance_due:number;tax:number;subtotal:number}};
+async function invoiceRequest(path:string,options?:RequestInit){const res=await fetch(`${BASE_URL}/invoices${path}`,{cache:'no-store',...options});if(!res.ok){const body=await res.json().catch(()=>null);throw Object.assign(new Error(body?.error||'Could not complete the invoice request.'),{definitive:res.status===400||res.status===409});}return res;}
+export const getInvoices=async(page=1):Promise<{invoices:IssuedInvoice[];count:number;page:number}>=>(await invoiceRequest(`?page=${page}`)).json();
+export const getBookingInvoice=async(id:number):Promise<{draft?:InvoiceDraft;existing?:IssuedInvoice}>=>(await invoiceRequest(`/booking/${id}`)).json();
+export const issueInvoice=async(input:{request_id:string;booking_id:number|null;draft:InvoiceDraft}):Promise<IssuedInvoice>=>(await invoiceRequest('',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)})).json();
+export async function downloadInvoice(id:string,filename:string){const blob=await(await invoiceRequest(`/${id}/download`)).blob();saveInvoiceBlob(blob,filename);}
+export async function previewInvoice(draft:InvoiceDraft){const blob=await(await invoiceRequest('/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(draft)})).blob();saveInvoiceBlob(blob,'Invoice-preview.pdf');}
+function saveInvoiceBlob(blob:Blob,filename:string){const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}
