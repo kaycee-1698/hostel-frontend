@@ -6,13 +6,13 @@ import Modal from '../Modal/Modal';
 import { useRooms } from '@/hooks/useRooms';
 
 export default function ManageRooms() {
-    const {rooms, addRoom, removeRoom, updateSingleRoom, addBedToRoom, removeBedFromRoom, updateBedName } = useRooms();
+    const {rooms, loading, error, fetchRooms, addRoom, removeRoom, updateSingleRoom, addBedToRoom, removeBedFromRoom, updateBedName } = useRooms();
     const [roomSaving,setRoomSaving]=useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
   
-    const handleAddRoom = async (name: string,baseRate:number) => {
-        await addRoom({room_name:name,base_rate:baseRate});
+    const handleAddRoom = async (name: string,baseRate:number,roomType:'dormitory'|'private') => {
+        await addRoom({room_name:name,base_rate:baseRate,room_type:roomType});
         setSuccessMessage(`Room "${name}" added successfully.`);
         setTimeout(() => setSuccessMessage(''), 10000);
     };
@@ -65,10 +65,13 @@ export default function ManageRooms() {
                 {successMessage}
             </div>
             )}
+            {loading&&<p role="status" className="text-gray-500">Loading rooms…</p>}
+            {error&&<div role="alert" className="text-red-700">{error} <button onClick={()=>void fetchRooms()} className="underline">Retry</button></div>}
             {rooms.map((room) => (
             <RoomCard 
                 key={room.room_id} 
                 room={room}
+                onRefresh={fetchRooms}
                 renameRoom={handleEditRoom}
                 removeRoom={handleDeleteRoom}
                 addBed={handleAddBed}

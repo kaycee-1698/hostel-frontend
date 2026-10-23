@@ -168,7 +168,9 @@ export async function updateBooking(id: number, editedBooking: any, requiresReas
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(room),
     });
-    return res.json();
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||data.message||'Could not save room details.');
+    return data;
   }
 
   export async function deleteRoom(id: number) {
@@ -329,3 +331,12 @@ export const issueInvoice=async(input:{request_id:string;booking_id:number|null;
 export async function downloadInvoice(id:string,filename:string){const blob=await(await invoiceRequest(`/${id}/download`)).blob();saveInvoiceBlob(blob,filename);}
 export async function previewInvoice(draft:InvoiceDraft){const blob=await(await invoiceRequest('/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(draft)})).blob();saveInvoiceBlob(blob,'Invoice-preview.pdf');}
 function saveInvoiceBlob(blob:Blob,filename:string){const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+
+export async function uploadRoomPhoto(id:number,photo:string){
+ const res=await fetch(`${BASE_URL}/rooms/${id}/photos`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photo})});
+ const data=await res.json();if(!res.ok)throw new Error(data.error||data.message||'Could not upload photo.');return data;
+}
+export async function saveRoomPhotos(id:number,expected:string[],paths:string[]){
+ const res=await fetch(`${BASE_URL}/rooms/${id}/photos`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({expected,paths})});
+ const data=await res.json();if(!res.ok)throw new Error(data.error||data.message||'Could not save photos.');return data;
+}

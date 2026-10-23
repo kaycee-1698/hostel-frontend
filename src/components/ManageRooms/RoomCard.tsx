@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import BedTag from './BedTag';
+import RoomListingEditor from './RoomListingEditor';
 import {formatRate} from '@/hooks/useRoomRates';
 import { Room } from '@/types';
 
@@ -9,9 +10,11 @@ export default function RoomCard({
   removeRoom,
   addBed,
   removeBed,
-  updateBed
+  updateBed,
+  onRefresh
 }: { 
-  room: Room; 
+  room: Room;
+  onRefresh:()=>Promise<void>;
   renameRoom: (roomId: number, newName: string) => void;
   removeRoom: (roomId: number, roomName: string) => void;
   addBed: (roomId: number, bedName: string) => Promise<any>;
@@ -19,6 +22,7 @@ export default function RoomCard({
   updateBed: (bedId: number, bedName: string) => Promise<any>;
 }) {
 
+  const [showListing,setShowListing]=useState(false);
   const [editingName, setEditingName] = useState(false);
   const [roomNameInput, setRoomNameInput] = useState(room.room_name);
   const [addingBed, setAddingBed] = useState(false);
@@ -122,7 +126,9 @@ export default function RoomCard({
         </button>
       </div>
 
-<p className="text-sm text-gray-500">Base rate: {formatRate(room.base_rate)} per bed / night</p>
+<p className="text-sm text-gray-500">Base rate: {formatRate(room.base_rate)} per {room.room_type==='private'?'room':'bed'} / night · {room.room_type==='private'?'Private room':'Dormitory'}</p>
+      <button onClick={()=>setShowListing(!showListing)} aria-expanded={showListing} className="text-sm font-medium text-indigo-700 underline">{showListing?'Hide room details & photos':'Room details & photos'}</button>
+      {showListing&&<RoomListingEditor room={room} onRefresh={onRefresh}/>}
       {/* Beds section */}
       <div className="flex flex-wrap gap-2 items-center">
         {room.beds.map((bed) => (

@@ -21,7 +21,7 @@ export default function Sidebar() {
       </div>
 
       {/* Sidebar Items */}
-      <nav className="flex flex-col mt-4 px-2 space-y-2">
+      <nav className="flex flex-col mt-4 px-2 space-y-2 overflow-y-auto pb-4">
         <Link href="/dashboard">
           <div>
             <SidebarItem icon="📊" label="Admin Dashboard" collapsed={collapsed} />
@@ -37,6 +37,7 @@ export default function Sidebar() {
             <SidebarItem icon="📘" label="Bookings" collapsed={collapsed} />
           </div>
         </Link>
+        <Link href="/dashboard/property"><SidebarItem icon="🏡" label="Property Details" collapsed={collapsed} /></Link>
         <Link href="/dashboard/rooms">
           <div>
             <SidebarItem icon="🛏️" label="Manage Rooms" collapsed={collapsed} />

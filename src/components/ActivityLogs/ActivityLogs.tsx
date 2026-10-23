@@ -4,14 +4,14 @@ import {getActivityLogs,ActivityLog,ActivityLogResponse} from '@/lib/api';
 import {hostelToday} from '@/lib/bookingFilters';
 
 const actions:Record<string,string>={create:'Created',update:'Updated / Edited',delete:'Deleted',assign:'Assigned',reassign:'Reassigned / Changed stay',unassign:'Unassigned',rate_change:'Rate changed'};
-const categories:Record<string,string>={booking:'Bookings',room:'Rooms',bed:'Beds',bed_assignment:'Bed assignments',room_assignment:'Room assignments',rate:'Nightly rates',guest:'Guests',payment:'Payments',document:'Guest documents',extra_item:'Extra items',extra_sale:'Extras payments',invoice:'Invoices'};
+const categories:Record<string,string>={booking:'Bookings',room:'Rooms',bed:'Beds',bed_assignment:'Bed assignments',room_assignment:'Room assignments',rate:'Nightly rates',guest:'Guests',payment:'Payments',document:'Guest documents',extra_item:'Extra items',extra_sale:'Extras payments',invoice:'Invoices',property:'Property details'};
 type Filters={period:string;start:string;end:string;search:string;action:string;entity:string};
 const initialFilters=():Filters=>({period:'today',start:hostelToday(),end:hostelToday(),search:'',action:'',entity:''});
 const control='rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-indigo-600';
 const button='rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-40';
 const time=(value:string)=>new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(value));
 const label=(key:string)=>({check_in:'Check-in',check_out:'Check-out',payment_received:'Paid amount',base_amount:'Base amount',base_rate:'Base rate',rate:'Nightly rate',stay_date:'Night',number_of_adults:'Adults',imageURL:'Document',id_number:'Identity document',gst:'GST'}[key]??key.replace(/_/g,' ').replace(/^./,c=>c.toUpperCase()));
-const value=(row:Record<string,unknown>|null,key:string)=>row===null?'—':!Object.hasOwn(row,key)?'Not stored':row[key]===null?'—':String(row[key]);
+const value=(row:Record<string,unknown>|null,key:string)=>row===null?'—':!Object.hasOwn(row,key)?'Not stored':row[key]===null?'—':Array.isArray(row[key]) ? (row[key] as unknown[]).map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(', ') || '—' : String(row[key]);
 function Changes({log}:{log:ActivityLog}){
  const fields=log.before_values&&log.after_values?log.changed_fields:Object.keys(log.after_values??log.before_values??{});
  return <details className="mt-2"><summary className="cursor-pointer text-xs text-indigo-600">View details</summary><div className="mt-2 overflow-x-auto"><table className="w-full text-xs"><thead><tr className="text-slate-500"><th className="p-2 text-left font-medium">Field</th><th className="p-2 text-left font-medium">Before</th><th className="p-2 text-left font-medium">After</th></tr></thead><tbody>{fields.map(key=><tr key={key} className="border-t border-slate-100"><th className="p-2 text-left font-normal">{label(key)}</th><td className="p-2 break-words">{value(log.before_values,key)}</td><td className="p-2 break-words">{value(log.after_values,key)}</td></tr>)}</tbody></table></div></details>;

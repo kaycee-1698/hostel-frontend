@@ -44,6 +44,10 @@ export interface Booking {
 }  
 
 export interface Room {
+  room_type?: 'dormitory' | 'private';
+  description?: string;
+  photo_paths?: string[];
+  photos?: {path:string;url:string}[];
   room_id: number;
   room_name: string;
   capacity: number;
