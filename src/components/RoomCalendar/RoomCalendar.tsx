@@ -189,6 +189,8 @@ export default function RoomCalendar() {
           </div>
           {visibleRooms.map(room => {
             const expanded = expandedRooms[room.room_id] ?? true;
+            const reservedDates: Record<string,number> = {};
+            if (room.room_type === 'private') for (const bed of room.beds) for (const [day, assignment] of Object.entries(calendarBookings[bed.bed_id] || {})) reservedDates[day] = assignment.booking_id;
             return <div key={room.room_id}>
               <div className="grid border-b border-slate-200 bg-slate-100" style={grid}>
                 <button disabled={moving} aria-expanded={expanded} className="sticky left-0 z-20 bg-slate-100 px-3 py-2 text-left text-sm font-semibold" onClick={() => setExpandedRooms(prev => ({...prev,[room.room_id]:!(prev[room.room_id] ?? true)}))}>{expanded ? '▾' : '▸'} {room.room_name}</button>
@@ -197,7 +199,7 @@ export default function RoomCalendar() {
                   value={rateDraft[rateKey(room.room_id,format(date,'yyyy-MM-dd'))] === null ? (rates[room.room_id] ?? '') : rateDraft[rateKey(room.room_id,format(date,'yyyy-MM-dd'))] ?? (rates[rateKey(room.room_id,format(date,'yyyy-MM-dd'))] ?? rates[room.room_id] ?? '')}
                   onFocus={event=>event.target.select()} onChange={event=>{setRateNotice('');setRateDraft(prev=>({...prev,[rateKey(room.room_id,format(date,'yyyy-MM-dd'))]:event.target.value}));}} />{!expanded && <div className="mt-1">{freeBeds([room],calendarBookings,date)} available</div>}</div>)}
               </div>
-              {expanded && room.beds.map(bed => <BedRow onPaymentSaved={refresh} key={bed.bed_id} bedId={bed.bed_id} bedName={bed.bed_name} disabled={moving} drag={drag} target={target} allBookings={calendarBookings} onBeginMove={beginMove} onCancelMove={cancelMove} onTarget={setTarget} onDropMove={(bedId,day) => void dropMove(bedId,day)} dates={dates} today={today} bookingsByDate={calendarBookings[bed.bed_id] || {}} onBookingClick={id => void openBooking(id)} onEmptyClick={date => createOnBed(room,bed,date)} />)}
+              {expanded && room.beds.map(bed => <BedRow reservedDates={reservedDates} onPaymentSaved={refresh} key={bed.bed_id} bedId={bed.bed_id} bedName={bed.bed_name} disabled={moving} drag={drag} target={target} allBookings={calendarBookings} onBeginMove={beginMove} onCancelMove={cancelMove} onTarget={setTarget} onDropMove={(bedId,day) => void dropMove(bedId,day)} dates={dates} today={today} bookingsByDate={calendarBookings[bed.bed_id] || {}} onBookingClick={id => void openBooking(id)} onEmptyClick={date => createOnBed(room,bed,date)} />)}
             </div>;
           })}
         </div>

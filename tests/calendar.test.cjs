@@ -223,3 +223,9 @@ test('live dashboard ignores superseded requests and keeps previous data on refr
  const failed=render().refresh();pending[2].reject(Error('offline'));await failed;
  assert.equal(render().data.available,10);assert.match(render().error,/retry/);cleanup();
 });
+test('private-room occupancy blocks spare beds from calendar availability', () => {
+  const {freeBeds}=load('lib/calendarUtils.ts',{'date-fns':dates});
+  const rooms=[{room_type:'private',beds:[{bed_id:1},{bed_id:2}]},{room_type:'dormitory',beds:[{bed_id:3},{bed_id:4}]}];
+  assert.equal(freeBeds(rooms,{1:{'2026-11-10':{booking_id:1}},3:{'2026-11-10':{booking_id:2}}},new Date(2026,10,10)),1);
+  assert.equal(freeBeds(rooms,{},new Date(2026,10,10)),4);
+});

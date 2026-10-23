@@ -22,7 +22,10 @@ export function visibleMoveConflict(bookings: CalendarBookings, drag: CalendarDr
 }
 export function freeBeds(rooms: Room[], bookings: CalendarBookings, date: Date) {
   const day = format(date, 'yyyy-MM-dd');
-  return rooms.reduce((sum, room) => sum + room.beds.filter(bed => !bookings[bed.bed_id]?.[day]).length, 0);
+  return rooms.reduce((sum, room) => {
+    if (room.room_type === 'private' && room.beds.some(bed => bookings[bed.bed_id]?.[day])) return sum;
+    return sum + room.beds.filter(bed => !bookings[bed.bed_id]?.[day]).length;
+  }, 0);
 }
 export function dateShade(date: Date, today: string) {
   return format(date, 'yyyy-MM-dd') === today ? 'bg-indigo-50' : isWeekend(date) ? 'bg-slate-50' : 'bg-white';
